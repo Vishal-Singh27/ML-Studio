@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+scikit-learn
+pandas
+ydata-profiling
+tensorflow
+pydantic
+python-multipart
+scipy
+joblib
+requests
