@@ -824,31 +824,8 @@ function App() {
 <div className="space-y-6 mb-6">
 
                     {/* AI Insights Card for EDA */}
-                    {(insights?.eda || (activeTab === 'eda' && (insightError || isGeneratingInsights))) && (
-                      <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
-                        <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                          <Sparkles size={20} className="text-purple-400" /> AI EDA Insights
-                        </h3>
-                        
-                        {isGeneratingInsights && (
-                          <div className="flex items-center gap-3 text-purple-400 animate-pulse font-medium">
-                            <Cpu size={20} className="animate-bounce" /> Groq Llama-3 is analyzing your dataset properties...
-                          </div>
-                        )}
-                        
-                        {insightError && (
-                          <div className="text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-sm">
-                            {insightError}
-                          </div>
-                        )}
-
-                        {insights?.eda && (
-                          <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
-                            <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{insights.eda}</ReactMarkdown>
-                          </div>
-                        )}
-                      </div>
+                    {(insights?.eda || isGeneratingInsights) && (
+                      <AiInsightBlock sectionKey="the Exploratory Data Analysis" text={insights?.eda} isDarkMode={isDarkMode} />
                     )}
 
                     {/* Data Doctor Report */}
@@ -1288,6 +1265,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                     {activeTab === 'models' && (
                       <div className="space-y-5">
                         {/* Model leaderboard */}
+                        {insights?.leaderboard && <AiInsightBlock sectionKey="the model leaderboard" text={insights.leaderboard} isDarkMode={isDarkMode} />}
                         <div className={`rounded-2xl border overflow-hidden ${card}`}>
                           <div className="px-6 pt-5 pb-3">
                             <h3 className="text-base font-bold flex items-center gap-2"><Award size={18} className="text-yellow-400" /> Model Leaderboard</h3>
@@ -1376,6 +1354,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 )}
                                 
                                 {/* Confusion Matrix */}
+                                {insights?.confusion_matrix && <AiInsightBlock sectionKey="the confusion matrix" text={insights.confusion_matrix} isDarkMode={isDarkMode} />}
                                 <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                   <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><FlaskConical size={16} className="text-purple-400" /> Confusion Matrix Heatmap</h4>
                                   <div className="flex justify-center">
@@ -1451,6 +1430,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                     {/* ── Deep Learning Tab ── */}
                     {activeTab === 'deep_learning' && results.dl_results && (
                       <div className="space-y-6">
+                        {insights?.deep_learning && <AiInsightBlock sectionKey="the deep learning training history" text={insights.deep_learning} isDarkMode={isDarkMode} />}
                         {/* DL stat cards */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                           <StatCard isDarkMode={isDarkMode} icon={<Brain size={20} className="text-purple-400" />} label="Epochs Trained" value={results.dl_results.epochs_trained} sub="with Early Stopping" color="bg-purple-500" />
