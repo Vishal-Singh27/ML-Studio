@@ -598,7 +598,8 @@ function App() {
               </div>
 
               {/* ── EDA TAB CONTENT ── */}
-              {activeTab === 'eda' && results.preprocessing && (() => {
+              <div className={activeTab === 'eda' ? 'block animate-fade-in' : 'hidden'}>
+                {results.preprocessing && (() => {
                 const edaFeatures = results.preprocessing?.eda?.features || [];
                 const corrMatrix = results.preprocessing?.eda?.correlation_matrix || [];
                 const corrFeatures: string[] = Array.from(new Set(corrMatrix.map((d: any) => d.x)));
@@ -848,10 +849,10 @@ function App() {
                   </div>
                 );
               })()}
+              </div>
               
               {/* ── MODEL RESULTS TAB CONTENT ── */}
-              {activeTab !== 'eda' && (
-                <>
+              <div className={activeTab !== 'eda' ? 'block animate-fade-in' : 'hidden'}>
 
               {/* AI Insights Card */}
               {((insights?.overall || insights) || insightError || isGeneratingInsights) && (
@@ -1478,8 +1479,7 @@ function App() {
                   </div>
                 );
               })()}
-                </>
-              )}
+              </div>
             </div>
           )}
 
