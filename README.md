@@ -7,6 +7,12 @@ Upload any CSV dataset and watch the entire machine learning pipeline execute au
 
 ---
 
+## 🚀 Advanced LLM & Agentic Features (New)
+* **Glass-box AutoML:** All models and preprocessing steps are compiled into strict `sklearn.pipeline.Pipeline` objects to completely prevent data leakage.
+* **Export to Python:** One-click generation of the exact Python code needed to reproduce your pipeline locally.
+* *(Coming Soon) Data Doctor Agent*: Automated semantic auditing of datasets to catch Target Leakage before training.
+* *(Coming Soon) Pipeline Copilot*: A natural language interface to directly manipulate the pipeline configuration.
+
 ## Architecture
 
 ```
