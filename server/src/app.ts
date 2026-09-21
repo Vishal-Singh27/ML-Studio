@@ -97,7 +97,8 @@ app.post('/api/upload', upload.single('dataset'), async (req, res) => {
         const enable_dl = req.body.enable_dl === 'true';
         
         // Mimic a Cloud Storage URL (e.g., S3) using the local Docker network
-        const storageUrl = `http://server:5000/uploads/${req.file.filename}`;
+        const baseUrl = process.env.RENDER_EXTERNAL_URL || 'http://server:5000';
+        const storageUrl = `${baseUrl}/uploads/${req.file.filename}`;
         
         // Non-Blocking: Push job to BullMQ immediately and return to client
         const job = await jobQueue.add('train-model', { 
@@ -164,14 +165,14 @@ app.post('/api/webhook/ml-engine', async (req, res) => {
         
         await redisDb.set(`job_result:${job_id}`, JSON.stringify({
             job_id, 
-            status: 'success', 
+            status: status || 'success', 
             task_type, 
             audit,
             preprocessing,
             supervised_results,
             unsupervised_results,
             dl_results,
-            error: null
+            error: req.body.message || null
         }), 'EX', 60 * 60 * 24); // Expire in 24 hours
         
         res.status(200).json({ received: true });
