@@ -13,8 +13,8 @@ services:
   - type: web
     name: ml-studio-server
     env: node
-    buildCommand: "cd server && npm install && npm run build"
-    startCommand: "cd server && npm start"
+    buildCommand: "cd server && npm install"
+    startCommand: "cd server && npx tsx src/app.ts"
     envVars:
       - key: NODE_VERSION
         value: 20.x
@@ -32,7 +32,7 @@ services:
   - type: web
     name: ml-studio-client
     env: static
-    buildCommand: "cd client && npm install && npm run build"
+    buildCommand: "cd client && npm install"
     staticPublishPath: "./client/dist"
     envVars:
       - key: NODE_VERSION
