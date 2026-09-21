@@ -241,7 +241,7 @@ const CopilotChat = ({ jobId, status, file, targetColumn, enableDL, isDarkMode, 
       )}
 
       {isCopilotOpen && (
-        <div className={`fixed bottom-6 right-6 w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl overflow-hidden z-50 border transition-all animate-in slide-in-from-bottom-10 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className={`fixed bottom-6 right-6 w-[450px] h-[550px] flex flex-col rounded-2xl shadow-2xl overflow-hidden z-50 border transition-all animate-in slide-in-from-bottom-10 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between p-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white">
             <div className="flex items-center gap-2">
               <Sparkles size={18} />
@@ -264,12 +264,14 @@ const CopilotChat = ({ jobId, status, file, targetColumn, enableDL, isDarkMode, 
                 <span className="text-xs font-bold uppercase text-gray-500 mb-1 px-1">
                   {msg.role === 'user' ? 'You' : 'Copilot'}
                 </span>
-                <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${
+                <div className={`p-3 rounded-2xl max-w-[90%] text-sm shadow-sm overflow-x-auto ${
                   msg.role === 'user' 
                     ? 'bg-purple-600 text-white rounded-br-none' 
-                    : isDarkMode ? 'bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700' : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
+                    : isDarkMode ? 'bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700' : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
                 }`}>
-                  <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown>
+                  <div className={`prose prose-sm max-w-none ${msg.role === 'user' || isDarkMode ? 'prose-invert' : ''} prose-p:leading-relaxed prose-pre:bg-black/20 prose-pre:p-2 prose-pre:rounded-lg prose-table:w-full prose-table:border-collapse prose-th:border prose-th:border-gray-500/30 prose-th:p-2 prose-th:bg-gray-500/10 prose-td:border prose-td:border-gray-500/20 prose-td:p-2`}>
+                    <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ))}
@@ -330,6 +332,24 @@ function App() {
   };
 
   const [file, setFile] = useState<File | null>(null);
+  const [columns, setColumns] = useState<string[]>([]);
+  
+  useEffect(() => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const firstLine = text.split('\n')[0];
+        const cols = firstLine.split(',').map(c => c.trim().replace(/^"|"$/g, '')).filter(c => c);
+        setColumns(cols);
+        setTargetColumn(''); // reset target when new file uploaded
+      };
+      reader.readAsText(file.slice(0, 1024)); // only read first 1KB
+    } else {
+      setColumns([]);
+    }
+  }, [file]);
+
   const [targetColumn, setTargetColumn] = useState<string>('');
   const [enableDL, setEnableDL] = useState<boolean>(true);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'queued' | 'success' | 'error'>('idle');
@@ -584,14 +604,22 @@ function App() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-7">
                     <div>
                       <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Target Column</label>
-                      <input
-                        type="text"
+                      <select
                         value={targetColumn}
                         onChange={e => setTargetColumn(e.target.value)}
-                        placeholder="e.g. 'diabetes' or 'price'"
-                        className={`w-full px-4 py-3 rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${isDarkMode ? 'bg-[#0a0a0f] border-gray-700 text-white placeholder-gray-600' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
-                      />
-                      <p className="text-xs text-gray-500 mt-1.5">Leave blank for unsupervised mode (PCA + K-Means)</p>
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none font-medium ${isDarkMode ? 'bg-[#0a0a0f] border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      >
+                        <option value="">⚡️ Unsupervised (Clustering)</option>
+                        {columns.length > 0 && <optgroup label="Supervised (Predict Column)">
+                          {columns.map(c => (
+                            <option key={c} value={c}>Predict '{c}'</option>
+                          ))}
+                        </optgroup>}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                        <Sparkles size={12} className="text-indigo-400" />
+                        {targetColumn ? `Supervised Pipeline will be built to predict ${targetColumn}` : 'No target selected. K-Means clustering will run.'}
+                      </p>
                     </div>
                     <div className={`flex items-start gap-3 p-4 rounded-xl border ${isDarkMode ? 'bg-[#0a0a0f] border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                       <input id="dl" type="checkbox" checked={enableDL} onChange={e => setEnableDL(e.target.checked)} className="w-5 h-5 mt-0.5 accent-indigo-500" />
