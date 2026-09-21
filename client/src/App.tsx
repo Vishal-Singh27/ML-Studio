@@ -533,12 +533,12 @@ function App() {
       <aside className={`w-64 flex flex-col border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0d0d14] border-gray-800' : 'bg-white border-gray-200'}`}>
         {/* Logo */}
         <div className="p-6 border-b border-gray-800">
-          <div className="font-black text-xl flex items-center gap-2.5">
+          <button onClick={reset} className="w-full text-left font-black text-xl flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
             <div className="p-1.5 bg-indigo-500/20 rounded-lg">
               <Activity className="text-indigo-400 animate-pulse" size={22} />
             </div>
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">ML Studio</span>
-          </div>
+          </button>
           <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>Data Pipeline Engine v1.0</p>
         </div>
 
