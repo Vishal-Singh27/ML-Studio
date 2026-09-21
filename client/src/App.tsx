@@ -585,35 +585,6 @@ function App() {
                 </div>
               </div>
 
-              {/* AI Insights Card */}
-              {((insights?.overall || insights) || insightError || isGeneratingInsights) && activeTab !== 'eda' && (
-                <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
-                  <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                    <Sparkles size={20} className="text-purple-400" /> AI Data Scientist Insights
-                  </h3>
-                  
-                  {isGeneratingInsights && (
-                    <div className="flex items-center gap-3 text-purple-400 animate-pulse font-medium">
-                      <Cpu size={20} className="animate-bounce" /> Groq Llama-3 is analyzing your pipeline results...
-                    </div>
-                  )}
-                  
-                  {insightError && (
-                    <div className="text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-sm">
-                      {insightError}
-                    </div>
-                  )}
-
-                  {insights && (
-                    <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.overall || (typeof insights === 'string' ? insights : '')}</ReactMarkdown>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              
               {/* ── GLOBAL TABS ── */}
               <div className={`flex gap-2 border-b mt-6 mb-6 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                 <button onClick={() => setActiveTab('eda')} className={`px-5 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${activeTab === 'eda' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-400'}`}>
@@ -879,6 +850,37 @@ function App() {
               {/* ── MODEL RESULTS TAB CONTENT ── */}
               {activeTab !== 'eda' && (
                 <>
+
+              {/* AI Insights Card */}
+              {((insights?.overall || insights) || insightError || isGeneratingInsights) && (
+                <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
+                  <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                    <Sparkles size={20} className="text-purple-400" /> AI Data Scientist Insights
+                  </h3>
+                  
+                  {isGeneratingInsights && (
+                    <div className="flex items-center gap-3 text-purple-400 animate-pulse font-medium">
+                      <Cpu size={20} className="animate-bounce" /> Groq Llama-3 is analyzing your pipeline results...
+                    </div>
+                  )}
+                  
+                  {insightError && (
+                    <div className="text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-sm">
+                      {insightError}
+                    </div>
+                  )}
+
+                  {insights && (
+                    <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.overall || (typeof insights === 'string' ? insights : '')}</ReactMarkdown>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              
+
 
               {/* ── SUPERVISED ── */}
               {results.task_type === 'SUPERVISED' && results.supervised_results && (() => {
