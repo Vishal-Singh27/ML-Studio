@@ -373,6 +373,10 @@ function App() {
 
   useEffect(() => {
     document.body.style.backgroundColor = isDarkMode ? '#0a0a0f' : '#f9fafb';
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+    if (link) {
+      link.href = isDarkMode ? '/logo-dark.png' : '/logo-light.png';
+    }
   }, [isDarkMode]);
 
   const [results, setResults] = useState<any>(null);
@@ -536,12 +540,10 @@ function App() {
         {/* Logo */}
         <div className="p-6 border-b border-gray-800">
           <button onClick={reset} className="w-full text-left font-black text-xl flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
-            <div className="p-1.5 bg-indigo-500/20 rounded-lg">
-              <Activity className="text-indigo-400 animate-pulse" size={22} />
-            </div>
+            <img src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} alt="ML Studio Logo" className="w-8 h-8 rounded-lg object-contain" />
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">ML Studio</span>
           </button>
-          <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>Data Pipeline Engine v1.0</p>
+          
         </div>
 
         {/* Nav */}
