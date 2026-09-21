@@ -441,7 +441,7 @@ function App() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (status === 'queued' && jobId) {
-      interval = setInterval(async () => {
+      const pollJob = async () => {
         try {
           const res = await axios.get(`/api/jobs/${jobId}`);
           if (res.data.status === 'success' && res.data.data) {
@@ -457,7 +457,10 @@ function App() {
             clearInterval(interval);
           }
         } catch (err) { console.error('Polling error', err); }
-      }, 3000);
+      };
+      
+      pollJob(); // Run immediately on mount
+      interval = setInterval(pollJob, 3000); // Then poll every 3 seconds
     }
     return () => { if (interval) clearInterval(interval); };
   }, [status, jobId]);
@@ -539,7 +542,7 @@ function App() {
       <aside className={`w-64 flex flex-col border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0d0d14] border-gray-800' : 'bg-white border-gray-200'}`}>
         {/* Logo */}
         <div className="p-6 border-b border-gray-800">
-          <button onClick={() => setView('upload')} className="w-full text-left font-black text-2xl flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
+          <button onClick={() => { setFile(null); setTargetColumn(''); setStatus('idle'); setJobId(null); setResults(null); setActiveTab('overview'); setView('upload'); }} className="w-full text-left font-black text-2xl flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
             <img src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} alt="ML Studio Logo" className={`w-14 h-14 -ml-2 object-contain scale-125 ${isDarkMode ? 'mix-blend-screen' : 'mix-blend-multiply'}`} />
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">ML Studio</span>
           </button>
