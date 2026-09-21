@@ -365,7 +365,11 @@ function App() {
   const [enableDL, setEnableDL] = useState<boolean>(true);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'queued' | 'success' | 'error'>('idle');
   const [jobId, setJobId] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+
+  useEffect(() => {
+    document.body.style.backgroundColor = isDarkMode ? '#0a0a0f' : '#f9fafb';
+  }, [isDarkMode]);
   const [results, setResults] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [cmModel, setCmModel] = useState<string>('');
