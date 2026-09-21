@@ -2,10 +2,10 @@ import { Worker } from 'bullmq';
 import axios from 'axios';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://ml-engine:8000';
+const FASTAPI_URL = process.env.ML_ENGINE_URL || process.env.FASTAPI_URL || 'http://ml-engine:8000';
 
 // Note: Using 'server:5000' here because the Docker internal network routes it properly
-const WEBHOOK_URL = 'http://server:5000/api/webhook/ml-engine';
+const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL}/api/webhook/ml-engine` : 'http://server:5000/api/webhook/ml-engine';
 
 export const worker = new Worker('ml-jobs', async (job) => {
     const { dataset_path, target_column, enable_dl, preprocessing_config } = job.data;
