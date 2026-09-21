@@ -185,7 +185,8 @@ function PipelineStep({ icon, label, done, active }: { icon: React.ReactNode; la
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
-function App() {
+
+const CopilotChat = ({ jobId, status, file, targetColumn, enableDL, isDarkMode, setJobId, setStatus, setActiveTab }: any) => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [copilotMessages, setCopilotMessages] = useState<any[]>([]);
   const [copilotInput, setCopilotInput] = useState("");
@@ -214,7 +215,6 @@ function App() {
       if (res.data.new_job_id) {
         setJobId(res.data.new_job_id);
         setStatus('queued');
-        // Switch to EDA tab automatically while waiting
         setActiveTab('eda');
       }
     } catch (err) {
@@ -224,6 +224,89 @@ function App() {
     setIsCopilotTyping(false);
   };
 
+  if (status === 'idle') return null;
+
+  return (
+    <>
+      {!isCopilotOpen && (
+        <button 
+          onClick={() => setIsCopilotOpen(true)}
+          className="fixed bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all z-50 flex items-center justify-center group"
+        >
+          <MessageSquare size={24} />
+          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap pl-0 group-hover:pl-2 font-bold">
+            Pipeline Copilot
+          </span>
+        </button>
+      )}
+
+      {isCopilotOpen && (
+        <div className={`fixed bottom-6 right-6 w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl overflow-hidden z-50 border transition-all animate-in slide-in-from-bottom-10 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} />
+              <span className="font-bold">Pipeline Copilot</span>
+            </div>
+            <button onClick={() => setIsCopilotOpen(false)} className="hover:bg-white/20 p-1 rounded-md transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {copilotMessages.length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                <MessageSquare size={48} className="mb-4" />
+                <p className="text-sm">I'm your ML Copilot.<br/>Ask me to explain the data or instruct me to change preprocessing settings and retrain!</p>
+              </div>
+            )}
+            {copilotMessages.map((msg, i) => (
+              <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <span className="text-xs font-bold uppercase text-gray-500 mb-1 px-1">
+                  {msg.role === 'user' ? 'You' : 'Copilot'}
+                </span>
+                <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${
+                  msg.role === 'user' 
+                    ? 'bg-purple-600 text-white rounded-br-none' 
+                    : isDarkMode ? 'bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700' : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
+                }`}>
+                  <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown>
+                </div>
+              </div>
+            ))}
+            {isCopilotTyping && (
+              <div className="flex items-start">
+                <div className={`p-3 rounded-2xl rounded-bl-none ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <span className="flex gap-1">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce"></span>
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={handleCopilotSubmit} className={`p-3 border-t flex gap-2 ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+            <input 
+              type="text" 
+              placeholder="Drop income outliers and retrain..."
+              value={copilotInput}
+              onChange={(e) => setCopilotInput(e.target.value)}
+              className={`flex-1 px-3 py-2 text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500 transition-shadow ${
+                isDarkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-black'
+              }`}
+            />
+            <button type="submit" disabled={!copilotInput.trim() || isCopilotTyping} className="p-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl transition-colors">
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+};
+
+function App() {
   const [inferenceForm, setInferenceForm] = useState<Record<string, any>>({});
   const [inferenceResult, setInferenceResult] = useState<any>(null);
   const [inferenceLoading, setInferenceLoading] = useState(false);
@@ -1635,89 +1718,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
         </div>
       </main>
 
-      {/* Pipeline Copilot Floating Chat */}
-      {status !== 'idle' && (
-        <>
-          {!isCopilotOpen && (
-            <button 
-              onClick={() => setIsCopilotOpen(true)}
-              className="fixed bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all z-50 flex items-center justify-center group"
-            >
-              <MessageSquare size={24} />
-              <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap pl-0 group-hover:pl-2 font-bold">
-                Pipeline Copilot
-              </span>
-            </button>
-          )}
-
-          {isCopilotOpen && (
-            <div className={`fixed bottom-6 right-6 w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl overflow-hidden z-50 border transition-all animate-in slide-in-from-bottom-10 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-              
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={18} />
-                  <span className="font-bold">Pipeline Copilot</span>
-                </div>
-                <button onClick={() => setIsCopilotOpen(false)} className="hover:bg-white/20 p-1 rounded-md transition-colors">
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Chat Log */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {copilotMessages.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
-                    <MessageSquare size={48} className="mb-4" />
-                    <p className="text-sm">I'm your ML Copilot.<br/>Ask me to explain the data or instruct me to change preprocessing settings and retrain!</p>
-                  </div>
-                )}
-                {copilotMessages.map((msg, i) => (
-                  <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <span className="text-xs font-bold uppercase text-gray-500 mb-1 px-1">
-                      {msg.role === 'user' ? 'You' : 'Copilot'}
-                    </span>
-                    <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${
-                      msg.role === 'user' 
-                        ? 'bg-purple-600 text-white rounded-br-none' 
-                        : isDarkMode ? 'bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700' : 'bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200'
-                    }`}>
-                      <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown>
-                    </div>
-                  </div>
-                ))}
-                {isCopilotTyping && (
-                  <div className="flex items-start">
-                    <div className={`p-3 rounded-2xl rounded-bl-none ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                      <span className="flex gap-1">
-                        <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce"></span>
-                        <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0.1s' }}></span>
-                        <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Input */}
-              <form onSubmit={handleCopilotSubmit} className={`p-3 border-t flex gap-2 ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
-                <input 
-                  type="text" 
-                  placeholder="Drop income outliers and retrain..."
-                  value={copilotInput}
-                  onChange={(e) => setCopilotInput(e.target.value)}
-                  className={`flex-1 px-3 py-2 text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500 transition-shadow ${
-                    isDarkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-black'
-                  }`}
-                />
-                <button type="submit" disabled={!copilotInput.trim() || isCopilotTyping} className="p-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl transition-colors">
-                  <Send size={18} />
-                </button>
-              </form>
-            </div>
-          )}
-        </>
-      )}
+<CopilotChat jobId={jobId} status={status} file={file} targetColumn={targetColumn} enableDL={enableDL} isDarkMode={isDarkMode} setJobId={setJobId} setStatus={setStatus} setActiveTab={setActiveTab} />
 
     </div>
   );
