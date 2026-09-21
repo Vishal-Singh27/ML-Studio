@@ -60,7 +60,7 @@ function AiInsightBlock({ text, sectionKey, isDarkMode }: { text?: string, secti
           {chat.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`p-2.5 rounded-lg max-w-[90%] ${msg.role === 'user' ? (isDarkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900') : (isDarkMode ? 'bg-gray-800/80 text-gray-200' : 'bg-white text-gray-800 border')}`}>
-                {msg.role === 'assistant' ? <div className="prose-sm prose-p:m-0"><ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown></div> : msg.content}
+                {msg.role === 'assistant' ? <div className="prose-sm prose-p:m-0"><ReactMarkdown remarkPlugins={memoizedRemarkPlugins} components={markdownComponents}>{msg.content.replace(/<br\s*\/?>/gi, '\n')}</ReactMarkdown></div> : msg.content}
               </div>
             </div>
           ))}
@@ -186,6 +186,17 @@ function PipelineStep({ icon, label, done, active }: { icon: React.ReactNode; la
 
 // ─── Main App ────────────────────────────────────────────────────────────────
 
+const markdownComponents = {
+  table: ({node, ...props}: any) => <table className="w-full border-collapse border border-gray-500/30 my-3 text-sm" {...props} />,
+  th: ({node, ...props}: any) => <th className="border border-gray-500/30 p-2.5 bg-gray-500/10 text-left font-bold" {...props} />,
+  td: ({node, ...props}: any) => <td className="border border-gray-500/30 p-2.5 align-top" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
+  ul: ({node, ...props}: any) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+  li: ({node, ...props}: any) => <li className="pl-1" {...props} />,
+  a: ({node, ...props}: any) => <a className="text-purple-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />
+};
+
 const CopilotChat = ({ jobId, status, file, targetColumn, enableDL, isDarkMode, setJobId, setStatus, setActiveTab }: any) => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [copilotMessages, setCopilotMessages] = useState<any[]>([]);
@@ -270,7 +281,7 @@ const CopilotChat = ({ jobId, status, file, targetColumn, enableDL, isDarkMode, 
                     : isDarkMode ? 'bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700' : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
                 }`}>
                   <div className={`prose prose-sm max-w-none ${msg.role === 'user' || isDarkMode ? 'prose-invert' : ''} prose-p:leading-relaxed prose-pre:bg-black/20 prose-pre:p-2 prose-pre:rounded-lg prose-table:w-full prose-table:border-collapse prose-th:border prose-th:border-gray-500/30 prose-th:p-2 prose-th:bg-gray-500/10 prose-td:border prose-td:border-gray-500/20 prose-td:p-2`}>
-                    <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={memoizedRemarkPlugins} components={markdownComponents}>{msg.content.replace(/<br\s*\/?>/gi, '\n')}</ReactMarkdown>
                   </div>
                 </div>
               </div>
