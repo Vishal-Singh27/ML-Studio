@@ -1,17 +1,86 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  UploadCloud, Activity, Settings, Database, Play, CheckCircle,
-  Sun, Moon, Cpu, FileSpreadsheet, X, Trophy, Target, Zap,
-  TrendingUp, BarChart2, GitBranch, Layers, Award, ChevronRight,
-  Brain, FlaskConical
+  UploadCloud, Activity, Settings, Database, Play, Grid, CheckCircle,
+  Sun, Moon, Cpu, FileSpreadsheet, Trophy, Target, Zap,
+  TrendingUp, BarChart2, GitBranch, Layers, Award, ChevronRight, Network,
+  Brain, FlaskConical, Sparkles
 } from 'lucide-react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ScatterChart, Scatter, ResponsiveContainer, BarChart, Bar,
+  ScatterChart, Scatter, ResponsiveContainer, ComposedChart, Bar,
   RadarChart, PolarGrid, PolarAngleAxis, Radar, Cell
 } from 'recharts';
 
+
+function AiInsightBlock({ text, sectionKey, isDarkMode }: { text?: string, sectionKey: string, isDarkMode: boolean }) {
+  const [chat, setChat] = useState<{role: string, content: string}[]>([]);
+  const [input, setInput] = useState('');
+
+  const [loading, setLoading] = useState(false);
+
+  if (!text) return null;
+
+  const handleAsk = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    const q = input.trim();
+    setInput('');
+    setChat(prev => [...prev, { role: 'user', content: q }]);
+    setLoading(true);
+    try {
+      const res = await axios.post('http://localhost:5001/api/insights/followup', {
+        section: sectionKey,
+        question: q,
+        baseInsight: text
+      });
+      setChat(prev => [...prev, { role: 'assistant', content: res.data.answer }]);
+    } catch (err) {
+      setChat(prev => [...prev, { role: 'assistant', content: '⚠️ Failed to get answer.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={`mt-4 p-4 rounded-xl border flex flex-col gap-3 ${isDarkMode ? 'bg-purple-900/20 border-purple-500/30 text-purple-200' : 'bg-purple-50 border-purple-200 text-purple-800'} text-sm shadow-inner`}>
+      <div className="flex items-start gap-3">
+        <Sparkles size={18} className="text-purple-400 mt-0.5 shrink-0" />
+        <div className={`prose-sm max-w-none leading-relaxed w-full ${isDarkMode ? 'prose-invert prose-p:text-purple-200' : 'prose-p:text-purple-800'}`}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        </div>
+      </div>
+      
+      {chat.length > 0 && (
+        <div className="mt-2 pl-8 flex flex-col gap-3 border-t border-purple-500/20 pt-3">
+          {chat.map((msg, i) => (
+            <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`p-2.5 rounded-lg max-w-[90%] ${msg.role === 'user' ? (isDarkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900') : (isDarkMode ? 'bg-gray-800/80 text-gray-200' : 'bg-white text-gray-800 border')}`}>
+                {msg.role === 'assistant' ? <div className="prose-sm prose-p:m-0"><ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown></div> : msg.content}
+              </div>
+            </div>
+          ))}
+          {loading && <div className="text-xs text-purple-400 animate-pulse ml-2">Thinking...</div>}
+        </div>
+      )}
+
+      <form onSubmit={handleAsk} className="mt-1 pl-8 relative flex items-center">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder={`Ask a follow-up about ${sectionKey}...`}
+          className={`w-full text-xs rounded-lg pl-3 pr-10 py-2 border focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all ${isDarkMode ? 'bg-black/20 border-purple-500/30 text-white placeholder-gray-500' : 'bg-white border-purple-200 text-black placeholder-gray-400'}`}
+        />
+        <button type="submit" disabled={loading || !input.trim()} className="absolute right-2 p-1 text-purple-500 hover:text-purple-400 disabled:opacity-50">
+          <Play size={14} className="fill-current" />
+        </button>
+      </form>
+    </div>
+  );
+}
 // ─── Animated Counter ──────────────────────────────────────────────────────
 function AnimatedNumber({ value, decimals = 0, suffix = '' }: { value: number; decimals?: number; suffix?: string }) {
   const [display, setDisplay] = useState(0);
@@ -115,6 +184,28 @@ function PipelineStep({ icon, label, done, active }: { icon: React.ReactNode; la
 
 // ─── Main App ────────────────────────────────────────────────────────────────
 function App() {
+  const [inferenceForm, setInferenceForm] = useState<Record<string, any>>({});
+  const [inferenceResult, setInferenceResult] = useState<any>(null);
+  const [inferenceLoading, setInferenceLoading] = useState(false);
+  const [selectedInferenceModel, setSelectedInferenceModel] = useState<string>('');
+
+  const handleInferenceSubmit = async () => {
+    if (!selectedInferenceModel) return;
+    setInferenceLoading(true);
+    setInferenceResult(null);
+    try {
+      const res = await axios.post(`http://localhost:8000/api/jobs/${jobId}/predict`, {
+        model_name: selectedInferenceModel,
+        features: inferenceForm
+      });
+      setInferenceResult(res.data);
+    } catch (e: any) {
+      alert("Inference failed: " + (e.response?.data?.error || e.message));
+    } finally {
+      setInferenceLoading(false);
+    }
+  };
+
   const [file, setFile] = useState<File | null>(null);
   const [targetColumn, setTargetColumn] = useState<string>('');
   const [enableDL, setEnableDL] = useState<boolean>(true);
@@ -124,8 +215,44 @@ function App() {
   const [results, setResults] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [cmModel, setCmModel] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'deep_learning'>('overview');
+  const [activeTab, setActiveTab] = useState<'eda' | 'overview' | 'models' | 'deep_learning' | 'inference'>('eda');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [insights, setInsights] = useState<any>(null);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+
+  const handleGenerateInsights = async () => {
+    if (!results) return;
+    setIsGeneratingInsights(true);
+    setInsightError(null);
+    try {
+      const summary: any = {
+        task_type: results.task_type,
+        dataset_shape: results.preprocessing?.original_shape
+      };
+      if (results.task_type === 'SUPERVISED') {
+        summary.models = {};
+        Object.entries(results.supervised_results?.evaluations || {}).forEach(([m, ev]: any) => {
+           summary.models[m] = { accuracy: ev.accuracy, f1_score: ev.f1_score, roc_auc: ev.roc_auc };
+        });
+      } else {
+        summary.clustering = {
+          optimal_k: results.unsupervised_results?.kmeans?.best_k,
+          peak_silhouette: Math.max(...(results.unsupervised_results?.kmeans?.elbow_silhouette_curve || []).map((x:any)=>x.silhouette)),
+          pca_variance: results.unsupervised_results?.pca?.explained_variance_ratio
+        };
+      }
+      
+      const res = await axios.post('http://localhost:5001/api/insights', { summary });
+      setInsights(res.data.insights);
+    } catch (err: any) {
+      setInsightError(err.response?.data?.error || 'Failed to generate insights.');
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
+
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
@@ -137,7 +264,7 @@ function App() {
       interval = setInterval(async () => {
         try {
           const res = await axios.get(`http://localhost:5001/api/jobs/${jobId}`);
-          if (res.data.status === 'completed' || res.data.status === 'success') {
+          if (res.data.status === 'success' && res.data.data) {
             setResults(res.data.data);
             if (res.data.data.task_type === 'SUPERVISED' && res.data.data.supervised_results) {
               const models = Object.keys(res.data.data.supervised_results.evaluations || {});
@@ -206,8 +333,8 @@ function App() {
     AUC: +((evals[name]?.roc_auc || 0) * 100).toFixed(1),
   }));
 
-  const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-  const cs = (cls: string) => isDarkMode ? cls : cls;
+  
+  
 
   const card = isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200 shadow-sm';
 
@@ -232,16 +359,13 @@ function App() {
           <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 px-3 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>Workspace</p>
           <nav className="space-y-1">
             {[
-              { icon: <Database size={18} />, label: 'Datasets', active: true },
-              { icon: <Cpu size={18} />, label: 'Models', active: false },
-              { icon: <GitBranch size={18} />, label: 'Pipelines', active: false },
-              { icon: <BarChart2 size={18} />, label: 'Experiments', active: false },
-              { icon: <Settings size={18} />, label: 'Settings', active: false },
-            ].map(({ icon, label, active }) => (
-              <button key={label} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              { icon: <Database size={18} />, label: 'New Analysis', active: status === 'idle', onClick: reset },
+              { icon: <Activity size={18} />, label: 'Results Dashboard', active: status !== 'idle', onClick: () => {} },
+            ].map(({ icon, label, active, onClick }) => (
+              <button key={label} onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
                   ? isDarkMode ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20' : 'bg-indigo-50 text-indigo-700'
-                  : isDarkMode ? 'text-gray-500 hover:text-gray-300 hover:bg-white/5' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                  : isDarkMode ? 'text-gray-500 hover:text-gray-300 hover:bg-white/5 cursor-pointer' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100 cursor-pointer'
               }`}>
                 {icon} {label}
               </button>
@@ -377,7 +501,7 @@ function App() {
                   <div className="flex justify-end">
                     <button
                       onClick={handleUpload}
-                      disabled={status === 'uploading'}
+                      disabled={status as string === 'uploading'}
                       className="group flex items-center gap-3 px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 hover:from-indigo-500 hover:to-purple-500 hover:-translate-y-0.5 transition-all disabled:opacity-50"
                     >
                       Run Full Pipeline <Play size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -389,7 +513,7 @@ function App() {
           )}
 
           {/* ─── UPLOADING ───────────────────────────────────────────────── */}
-          {status === 'uploading' && (
+          {status as string === 'uploading' && (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
                 <svg className="animate-spin h-12 w-12 text-indigo-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -453,9 +577,308 @@ function App() {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <span className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">Job #{results.job_id}</span>
+                  <span className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center">Job #{results.job_id}</span>
+                  <button onClick={handleGenerateInsights} disabled={isGeneratingInsights} className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-sm font-bold flex items-center gap-2 shadow-lg shadow-purple-500/25 transition-all disabled:opacity-50">
+                    {isGeneratingInsights ? <Activity size={16} className="animate-spin" /> : <Sparkles size={16} />} 
+                    {isGeneratingInsights ? 'Analyzing...' : 'AI Insights'}
+                  </button>
                 </div>
               </div>
+
+              {/* AI Insights Card */}
+              {(insights || insightError || isGeneratingInsights) && (
+                <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
+                  <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                    <Sparkles size={20} className="text-purple-400" /> AI Data Scientist Insights
+                  </h3>
+                  
+                  {isGeneratingInsights && (
+                    <div className="flex items-center gap-3 text-purple-400 animate-pulse font-medium">
+                      <Cpu size={20} className="animate-bounce" /> Groq Llama-3 is analyzing your pipeline results...
+                    </div>
+                  )}
+                  
+                  {insightError && (
+                    <div className="text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-sm">
+                      {insightError}
+                    </div>
+                  )}
+
+                  {insights && (
+                    <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.overall}</ReactMarkdown>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              
+              {/* ── GLOBAL TABS ── */}
+              <div className={`flex gap-2 border-b mt-6 mb-6 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                <button onClick={() => setActiveTab('eda')} className={`px-5 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${activeTab === 'eda' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-400'}`}>
+                  EDA & Preprocessing
+                </button>
+                <button onClick={() => setActiveTab('overview')} className={`px-5 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${activeTab !== 'eda' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-400'}`}>
+                  Model Results
+                </button>
+              </div>
+
+              {/* ── EDA TAB CONTENT ── */}
+              {activeTab === 'eda' && results.preprocessing && (() => {
+                const edaFeatures = results.preprocessing?.eda?.features || [];
+                const corrMatrix = results.preprocessing?.eda?.correlation_matrix || [];
+                const corrFeatures: string[] = Array.from(new Set(corrMatrix.map((d: any) => d.x)));
+                const numFeatures = edaFeatures.filter((f: any) => f.mean !== undefined);
+                const totalOutliers = numFeatures.reduce((s: number, f: any) => s + (f.outlier_count || 0), 0);
+                const totalMissing = edaFeatures.reduce((s: number, f: any) => s + (f.missing || 0), 0);
+                // const pcaVariance = 
+                const pcaData = (() => {
+                  const ev = results.unsupervised_results?.pca?.explained_variance_ratio;
+                  if (!ev) return [];
+                  let cumulative = 0;
+                  return ev.map((v: number, i: number) => {
+                    cumulative += v * 100;
+                    return { name: `PC${i+1}`, individual: parseFloat((v*100).toFixed(1)), cumulative: Math.min(100, parseFloat(cumulative.toFixed(1))) };
+                  });
+                })();
+                
+                const skewnessLabel = (s: number) => {
+                  if (Math.abs(s) < 0.5) return { label: 'Symmetric', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+                  if (s > 0.5) return { label: 'Right Skewed', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' };
+                  return { label: 'Left Skewed', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+                };
+
+                                  return (
+<div className="space-y-6 mb-6">
+
+                    {/* AI Insights Card for EDA */}
+                    {(insights?.eda || (activeTab === 'eda' && (insightError || isGeneratingInsights))) && (
+                      <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
+                        <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                          <Sparkles size={20} className="text-purple-400" /> AI EDA Insights
+                        </h3>
+                        
+                        {isGeneratingInsights && (
+                          <div className="flex items-center gap-3 text-purple-400 animate-pulse font-medium">
+                            <Cpu size={20} className="animate-bounce" /> Groq Llama-3 is analyzing your dataset properties...
+                          </div>
+                        )}
+                        
+                        {insightError && (
+                          <div className="text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-sm">
+                            {insightError}
+                          </div>
+                        )}
+
+                        {insights?.eda && (
+                          <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.eda}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+
+                    {/* ── Row 1: 4 quick stat cards ── */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { label: 'Total Rows', value: results.preprocessing?.eda?.num_rows || results.preprocessing?.original_shape?.[0], sub: 'observations', icon: '📊', color: 'from-indigo-500 to-indigo-600' },
+                        { label: 'Features', value: results.preprocessing?.eda?.num_cols || results.preprocessing?.original_shape?.[1], sub: 'columns', icon: '🧩', color: 'from-purple-500 to-purple-600' },
+                        { label: 'Missing Values', value: totalMissing, sub: totalMissing === 0 ? 'clean dataset ✓' : 'need imputation', icon: '❓', color: totalMissing === 0 ? 'from-emerald-500 to-emerald-600' : 'from-red-500 to-red-600' },
+                        { label: 'IQR Outliers', value: totalOutliers, sub: 'across all features', icon: '⚠️', color: totalOutliers === 0 ? 'from-emerald-500 to-emerald-600' : 'from-yellow-500 to-orange-500' },
+                      ].map(card => (
+                        <div key={card.label} className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-2xl">{card.icon}</span>
+                            <span className={`text-xs font-semibold px-2 py-1 rounded-full bg-gradient-to-r ${card.color} text-white`}>{card.label}</span>
+                          </div>
+                          <p className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{card.value?.toLocaleString()}</p>
+                          <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── Row 2: Correlation Heatmap + Preprocessing Pipeline ── */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                      {/* Correlation Heatmap */}
+                      <div className={`xl:col-span-2 p-6 rounded-2xl border ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+                        <h3 className={`text-base font-bold mb-1 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <Grid size={18} className="text-cyan-400" /> Feature Correlation Heatmap
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-5">Green = positive, Red = negative. Strong correlations (±0.7+) signal multicollinearity.</p>
+                        {corrFeatures.length > 0 ? (
+                          <div className="overflow-x-auto pb-2">
+                            <div style={{ display: 'grid', gridTemplateColumns: `110px repeat(${corrFeatures.length}, 1fr)` }} className="gap-1.5 text-xs min-w-[300px]">
+                              <div></div>
+                              {corrFeatures.map((f: any) => (
+                                <div key={`h-${f}`} className="text-center font-semibold text-gray-400 truncate px-1" title={f}>{f.length > 10 ? f.slice(0,9)+'..' : f}</div>
+                              ))}
+                              {corrFeatures.map((y: any) => (
+                                <React.Fragment key={`row-${y}`}>
+                                  <div className="flex items-center justify-end pr-2 font-semibold text-gray-400 truncate text-right" title={y}>{y.length > 14 ? y.slice(0,12)+'..' : y}</div>
+                                  {corrFeatures.map((x: any) => {
+                                    const cell = corrMatrix.find((m: any) => m.x === x && m.y === y);
+                                    const val = cell ? cell.value : 0;
+                                    const abs = Math.abs(val);
+                                    const bg = val >= 0 ? `rgba(16,185,129,${Math.max(0.08, abs)})` : `rgba(239,68,68,${Math.max(0.08, abs)})`;
+                                    return (
+                                      <div key={`${x}-${y}`} className={`h-11 rounded-lg flex items-center justify-center font-bold transition-transform hover:scale-105 cursor-default shadow-sm text-sm ${abs > 0.4 ? 'text-white' : (isDarkMode ? 'text-gray-300' : 'text-gray-700')}`}
+                                        style={{ backgroundColor: bg }} title={`${x} ↔ ${y}: ${val}`}>
+                                        {val.toFixed(2)}
+                                      </div>
+                                    );
+                                  })}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </div>
+                        ) : <div className="h-32 flex items-center justify-center text-gray-500 text-sm">Not enough numerical features.</div>}
+                      </div>
+
+                      {/* Preprocessing Pipeline */}
+                      <div className={`xl:col-span-1 p-6 rounded-2xl border ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+                        <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <Cpu size={18} className="text-pink-400" /> Preprocessing Pipeline
+                        </h3>
+                        <div className="flex flex-col gap-3">
+                          {results.preprocessing?.logs?.map((log: string, i: number) => (
+                            <div key={i} className={`p-3 rounded-lg text-sm border-l-4 border-pink-500 flex items-start gap-3 ${isDarkMode ? 'bg-gray-900/50 text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
+                              <CheckCircle size={15} className="text-emerald-500 shrink-0 mt-0.5" />
+                              <span>{log}</span>
+                            </div>
+                          )) || <p className="text-sm text-gray-500">No logs available.</p>}
+                        </div>
+                        {results.preprocessing?.eda?.num_duplicates !== undefined && (
+                          <div className={`mt-4 p-3 rounded-lg text-sm border-l-4 ${results.preprocessing.eda.num_duplicates > 0 ? 'border-yellow-500 bg-yellow-500/10 text-yellow-300' : 'border-emerald-500 bg-emerald-500/10 text-emerald-300'} flex items-center gap-3`}>
+                            <CheckCircle size={15} className="shrink-0" />
+                            {results.preprocessing.eda.num_duplicates === 0 ? 'No duplicate rows found.' : `${results.preprocessing.eda.num_duplicates} duplicate rows detected.`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Row 3: Per-feature distribution cards ── */}
+                    <div>
+                      <h3 className={`text-base font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <BarChart2 size={18} className="text-blue-400" /> Feature Distributions
+                        <span className="text-xs font-normal text-gray-500 ml-2">Skewness, IQR outliers, and histogram for each feature</span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                        {edaFeatures.map((f: any, i: number) => {
+                          const isNum = f.mean !== undefined;
+                          const sk = isNum ? skewnessLabel(f.skewness || 0) : null;
+                          const maxBin = isNum ? Math.max(...(f.histogram || []).map((h: any) => h.count), 1) : 1;
+                          return (
+                            <div key={i} className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className={`font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={f.name}>{f.name}</h4>
+                                <span className={`text-xs px-2 py-0.5 rounded font-mono ${f.type.includes('float') || f.type.includes('int') ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'}`}>{f.type}</span>
+                              </div>
+
+                              {isNum ? (
+                                <>
+                                  {/* Mini bar histogram */}
+                                  <div className="flex items-end gap-0.5 h-16 mb-3">
+                                    {(f.histogram || []).map((h: any, bi: number) => (
+                                      <div key={bi} className="flex-1 h-full flex flex-col items-center justify-end" title={`${h.bin}: ${h.count}`}>
+                                        <div className="w-full rounded-sm bg-indigo-500/70 hover:bg-indigo-400 transition-all"
+                                          style={{ height: `${(h.count / maxBin) * 100}%`, minHeight: h.count > 0 ? '2px' : '0' }}></div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="flex justify-between text-[10px] text-gray-600 mb-3">
+                                    <span>{f.min?.toFixed(1)}</span>
+                                    <span className="text-gray-500">distribution</span>
+                                    <span>{f.max?.toFixed(1)}</span>
+                                  </div>
+
+                                  {/* Stats grid */}
+                                  <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+                                    {[
+                                      { label: 'Mean', val: f.mean?.toFixed(2) },
+                                      { label: 'Median', val: f.median?.toFixed(2) },
+                                      { label: 'Std', val: f.std?.toFixed(2) },
+                                      { label: 'Q1', val: f.q1?.toFixed(2) },
+                                      { label: 'Q3', val: f.q3?.toFixed(2) },
+                                      { label: 'Kurt', val: f.kurtosis?.toFixed(2) },
+                                    ].map(stat => (
+                                      <div key={stat.label} className={`p-1.5 rounded-lg text-center ${isDarkMode ? 'bg-gray-800/60' : 'bg-gray-100'}`}>
+                                        <p className="text-gray-500 text-[10px] mb-0.5">{stat.label}</p>
+                                        <p className={`font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{stat.val}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Skewness + Outliers badges */}
+                                  <div className="flex gap-2 flex-wrap">
+                                    {sk && <span className={`text-xs px-2 py-1 rounded-full border font-semibold ${sk.bg} ${sk.color}`}>⊕ {sk.label} ({f.skewness})</span>}
+                                    <span className={`text-xs px-2 py-1 rounded-full border font-semibold ${f.outlier_count > 0 ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
+                                      {f.outlier_count > 0 ? `⚠ ${f.outlier_count} outliers` : '✓ No outliers'}
+                                    </span>
+                                    {f.missing > 0 && <span className="text-xs px-2 py-1 rounded-full border bg-red-500/10 border-red-500/20 text-red-400 font-semibold">❓ {f.missing} missing</span>}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className={`mb-3 p-2 rounded-lg text-center ${isDarkMode ? 'bg-gray-800/60' : 'bg-gray-100'}`}>
+                                    <p className="text-gray-500 text-xs">Unique values</p>
+                                    <p className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{f.unique}</p>
+                                  </div>
+                                  {(f.value_counts || []).slice(0, 5).map((vc: any, vi: number) => {
+                                    const maxVc = f.value_counts[0]?.count || 1;
+                                    return (
+                                      <div key={vi} className="mb-1.5">
+                                        <div className="flex justify-between text-[11px] mb-0.5">
+                                          <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{vc.label}</span>
+                                          <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{vc.count}</span>
+                                        </div>
+                                        <div className={`h-1.5 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                                          <div className="h-full rounded-full bg-orange-400" style={{ width: `${(vc.count / maxVc) * 100}%` }}></div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ── Row 4: PCA Variance Chart (if available) ── */}
+                    {pcaData.length > 0 && (
+                      <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+                        <h3 className={`text-base font-bold mb-1 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <TrendingUp size={18} className="text-purple-400" /> PCA — Explained Variance
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-5">How much information each Principal Component captures. Cumulative line shows elbow point.</p>
+                        <div className="h-52">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={pcaData} margin={{ top: 5, right: 30, left: -10, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} vertical={false} />
+                              <XAxis dataKey="name" stroke="#6b7280" />
+                              <YAxis yAxisId="left" stroke="#6b7280" tickFormatter={v => `${v}%`} domain={[0, 100]} />
+                              <YAxis yAxisId="right" orientation="right" stroke="#6b7280" tickFormatter={v => `${v}%`} domain={[0, 100]} />
+                              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} formatter={(v: any) => [`${v}%`]} />
+                              <Legend />
+                              <Bar yAxisId="left" dataKey="individual" name="Individual %" fill="#8b5cf6" radius={[4,4,0,0]} />
+                              <Line yAxisId="right" type="monotone" dataKey="cumulative" name="Cumulative %" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: '#10b981' }} />
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })()}
+              
+              {/* ── MODEL RESULTS TAB CONTENT ── */}
+              {activeTab !== 'eda' && (
+                <>
 
               {/* ── SUPERVISED ── */}
               {results.task_type === 'SUPERVISED' && results.supervised_results && (() => {
@@ -491,7 +914,7 @@ function App() {
                           <p className="text-xs text-gray-500 mb-5">Higher is better. Ensemble models (Voting, Stacking) typically outperform individual classifiers.</p>
                           <div className="h-72">
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={getAccuracies()} margin={{ top: 10, right: 20, left: -10, bottom: 30 }}>
+                              <ComposedChart data={getAccuracies()} margin={{ top: 10, right: 20, left: -10, bottom: 30 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} vertical={false} />
                                 <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" />
                                 <YAxis stroke="#6b7280" domain={[0, 100]} tickFormatter={v => `${v}%`} />
@@ -499,7 +922,7 @@ function App() {
                                 <Legend />
                                 <Bar dataKey="Accuracy" fill="#6366f1" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="F1" fill="#10b981" radius={[4, 4, 0, 0]} />
-                              </BarChart>
+                              </ComposedChart>
                             </ResponsiveContainer>
                           </div>
                         </div>
@@ -594,21 +1017,125 @@ function App() {
                           </table>
                         </div>
 
-                        {/* Confusion Matrix */}
-                        <div className={`p-6 rounded-2xl border ${card}`}>
-                          <div className="flex items-center justify-between mb-5">
-                            <div>
-                              <h3 className="text-base font-bold flex items-center gap-2"><FlaskConical size={18} className="text-purple-400" /> Confusion Matrix</h3>
-                              <p className="text-xs text-gray-500 mt-0.5">Green = correct predictions, Red = misclassifications</p>
+                        {/* Model Detailed Insights */}
+                        {cmModel && evals[cmModel] && (
+                          <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+                            <div className="flex items-center justify-between mb-5">
+                              <div>
+                                <h3 className="text-lg font-bold flex items-center gap-2"><Settings size={20} className="text-blue-400" /> {cmModel.replace(/_/g, ' ')} — Deep Dive</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Explore model parameters, feature importances, and validation scores.</p>
+                              </div>
+                              <select value={cmModel} onChange={e => setCmModel(e.target.value)} className={`text-sm rounded-lg px-3 py-1.5 border focus:outline-none font-semibold ${isDarkMode ? 'bg-[#0a0a0f] border-gray-700 text-gray-200' : 'bg-gray-50 border-gray-300'}`}>
+                                {modelNames.map(m => <option key={m} value={m}>{m.replace(/_/g, ' ')}</option>)}
+                              </select>
                             </div>
-                            <select value={cmModel} onChange={e => setCmModel(e.target.value)} className={`text-sm rounded-lg px-3 py-1.5 border focus:outline-none ${isDarkMode ? 'bg-[#0a0a0f] border-gray-700 text-gray-200' : 'bg-gray-50 border-gray-300'}`}>
-                              {modelNames.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
+                            
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                              
+                              {/* Left Column: Confusion Matrix & CV Scores */}
+                              <div className="space-y-6">
+                                {/* CV Scores / Bias-Variance */}
+                                {evals[cmModel]?.cv_scores && (
+                                  <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                    <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Target size={16} className="text-pink-400" /> Cross-Validation (Bias-Variance)</h4>
+                                    <div className="flex gap-4">
+                                      <div className="flex-1 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                        <p className="text-[10px] uppercase text-emerald-500 font-bold mb-1">Mean Test Score</p>
+                                        <p className="text-xl font-black text-emerald-400">{(evals[cmModel].cv_scores.mean_test_score * 100).toFixed(1)}%</p>
+                                      </div>
+                                      <div className="flex-1 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                                        <p className="text-[10px] uppercase text-orange-500 font-bold mb-1">Score Std Dev (Variance)</p>
+                                        <p className="text-xl font-black text-orange-400">±{(evals[cmModel].cv_scores.std_test_score * 100).toFixed(2)}%</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Best Params */}
+                                {evals[cmModel]?.best_params && Object.keys(evals[cmModel].best_params).length > 0 && (
+                                  <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                    <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Settings size={16} className="text-cyan-400" /> Best Hyperparameters</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {Object.entries(evals[cmModel].best_params).map(([k, v]) => (
+                                        <div key={k} className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
+                                          <span className="text-xs text-blue-300 font-mono">{k}:</span>
+                                          <span className="text-sm text-blue-100 font-bold">{String(v)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Confusion Matrix */}
+                                <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                  <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><FlaskConical size={16} className="text-purple-400" /> Confusion Matrix Heatmap</h4>
+                                  <div className="flex justify-center">
+                                    <ConfusionMatrix matrix={evals[cmModel]?.confusion_matrix || []} isDarkMode={isDarkMode} />
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Right Column: Feature Importances & Classification Report */}
+                              <div className="space-y-6">
+                                {/* Feature Importances */}
+                                {evals[cmModel]?.feature_importance ? (
+                                  <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'} h-[300px] flex flex-col`}>
+                                    <h4 className="text-sm font-bold mb-1 flex items-center gap-2"><BarChart2 size={16} className="text-yellow-400" /> Feature Importances</h4>
+                                    <p className="text-[10px] text-gray-500 mb-3">Which features drove the model's decisions</p>
+                                    <div className="flex-1 overflow-y-auto pr-2">
+                                      <ResponsiveContainer width="100%" height={Math.max(200, evals[cmModel].feature_importance.length * 35)}>
+                                        <ComposedChart data={evals[cmModel].feature_importance} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                          <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} horizontal={false} />
+                                          <XAxis type="number" stroke="#6b7280" />
+                                          <YAxis type="category" dataKey="feature" stroke="#6b7280" tick={{fontSize: 10}} width={100} />
+                                          <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '8px' }} formatter={(v: any) => v.toFixed(4)} />
+                                          <Bar dataKey="importance" fill="#facc15" radius={[0, 4, 4, 0]} />
+                                        </ComposedChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'} h-24 flex items-center justify-center text-sm text-gray-500`}>
+                                    Feature importances not available for this model type.
+                                  </div>
+                                )}
+                                
+                                {/* Precision & Recall */}
+                                {evals[cmModel]?.classification_report && (
+                                  <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                    <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Network size={16} className="text-indigo-400" /> Precision & Recall per Class</h4>
+                                    <div className="space-y-3">
+                                      {Object.entries(evals[cmModel].classification_report).filter(([k]) => k !== 'accuracy' && k !== 'macro avg' && k !== 'weighted avg').map(([cls, metrics]: any) => (
+                                        <div key={cls}>
+                                          <div className="flex justify-between text-xs mb-1">
+                                            <span className="font-bold text-gray-400">Class: {cls}</span>
+                                            <span className="text-gray-500">Support: {metrics.support}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-[10px]">
+                                            <span className="w-12 text-right">Precision</span>
+                                            <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                              <div className="h-full bg-indigo-500" style={{ width: `${metrics.precision * 100}%` }}></div>
+                                            </div>
+                                            <span className="w-8">{(metrics.precision * 100).toFixed(0)}%</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-[10px] mt-1">
+                                            <span className="w-12 text-right">Recall</span>
+                                            <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                              <div className="h-full bg-pink-500" style={{ width: `${metrics.recall * 100}%` }}></div>
+                                            </div>
+                                            <span className="w-8">{(metrics.recall * 100).toFixed(0)}%</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-center">
-                            <ConfusionMatrix matrix={evals[cmModel]?.confusion_matrix || []} isDarkMode={isDarkMode} />
-                          </div>
-                        </div>
+                        )}
+
                       </div>
                     )}
 
@@ -686,53 +1213,269 @@ function App() {
                         <p className="text-sm text-gray-600 mt-1">Toggle "Enable Deep Learning" before uploading to see MLP training curves.</p>
                       </div>
                     )}
+
+                    {/* ── Inference Tab ── */}
+                    {activeTab === 'inference' && results.supervised_results && (
+                      <div className={`p-6 rounded-2xl border ${card}`}>
+                        <div className="flex items-center justify-between mb-6">
+                          <div>
+                            <h3 className="text-xl font-bold flex items-center gap-2"><Target size={22} className="text-pink-400" /> Interactive Inference Engine</h3>
+                            <p className="text-sm text-gray-500 mt-1">Test your models on new, custom data points instantly.</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Select Model:</span>
+                            <select 
+                              value={selectedInferenceModel} 
+                              onChange={e => setSelectedInferenceModel(e.target.value)} 
+                              className={`text-sm rounded-lg px-4 py-2 border focus:outline-none font-bold ${isDarkMode ? 'bg-[#0a0a0f] border-gray-700 text-gray-200' : 'bg-gray-50 border-gray-300'}`}
+                            >
+                              {modelNames.map(m => <option key={m} value={m}>{m.replace(/_/g, ' ')}</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                          {/* Left: Input Form */}
+                          <div className={`lg:col-span-2 p-5 rounded-xl border ${isDarkMode ? 'bg-gray-900/30 border-gray-800' : 'bg-gray-50/50 border-gray-200'}`}>
+                            <h4 className={`text-sm font-bold mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Input Features</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {results.preprocessing?.eda?.features?.map((f: any) => (
+                                <div key={f.name} className="flex flex-col gap-1">
+                                  <label className="text-xs font-semibold text-gray-500 flex justify-between">
+                                    {f.name}
+                                    <span className="text-[10px] opacity-70">
+                                      {f.type.includes('float') || f.type.includes('int') ? `Range: [${f.min?.toFixed(1)}, ${f.max?.toFixed(1)}]` : 'Categorical'}
+                                    </span>
+                                  </label>
+                                  {(f.type.includes('float') || f.type.includes('int')) ? (
+                                    <input 
+                                      type="number"
+                                      step="any"
+                                      value={inferenceForm[f.name] !== undefined ? inferenceForm[f.name] : ''}
+                                      onChange={(e) => setInferenceForm(prev => ({...prev, [f.name]: parseFloat(e.target.value)}))}
+                                      className={`text-sm px-3 py-2 rounded-lg border focus:border-indigo-500 outline-none transition-all ${isDarkMode ? 'bg-[#12121a] border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                                    />
+                                  ) : (
+                                    <select
+                                      value={inferenceForm[f.name] || ''}
+                                      onChange={(e) => setInferenceForm(prev => ({...prev, [f.name]: e.target.value}))}
+                                      className={`text-sm px-3 py-2 rounded-lg border focus:border-indigo-500 outline-none transition-all ${isDarkMode ? 'bg-[#12121a] border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                                    >
+                                      <option value="">Select...</option>
+                                      {f.value_counts?.map((vc: any) => (
+                                        <option key={vc.label} value={vc.label}>{vc.label}</option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              onClick={handleInferenceSubmit}
+                              disabled={inferenceLoading}
+                              className={`mt-6 w-full py-3 rounded-lg font-bold text-white flex justify-center items-center gap-2 transition-all shadow-md hover:shadow-lg ${inferenceLoading ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-pink-500 to-indigo-500 hover:from-pink-400 hover:to-indigo-400'}`}
+                            >
+                              {inferenceLoading ? <span className="animate-spin text-xl">⚙</span> : <Zap size={18} />}
+                              {inferenceLoading ? 'Processing...' : 'Run Prediction'}
+                            </button>
+                          </div>
+
+                          {/* Right: Output */}
+                          <div className={`p-6 rounded-xl border flex flex-col items-center justify-center text-center ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'} shadow-inner min-h-[300px]`}>
+                            {inferenceResult ? (
+                              <div className="w-full flex flex-col items-center animate-fade-in">
+                                <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500 flex items-center justify-center mb-4 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                                  <CheckCircle size={40} />
+                                </div>
+                                <p className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Predicted Class</p>
+                                <p className={`text-4xl font-black mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{inferenceResult.prediction}</p>
+                                
+                                {inferenceResult.probabilities && (
+                                  <div className="w-full">
+                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3 text-left">Probabilities</p>
+                                    <div className="space-y-3">
+                                      {inferenceResult.probabilities.map((prob: number, idx: number) => {
+                                        const isMax = prob === Math.max(...inferenceResult.probabilities);
+                                        return (
+                                          <div key={idx} className="flex flex-col gap-1 text-left">
+                                            <div className="flex justify-between text-xs font-bold">
+                                              <span className={isMax ? (isDarkMode ? 'text-gray-200' : 'text-gray-800') : 'text-gray-500'}>Class {idx}</span>
+                                              <span className={isMax ? 'text-indigo-400' : 'text-gray-500'}>{(prob * 100).toFixed(1)}%</span>
+                                            </div>
+                                            <div className={`h-2 rounded-full w-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'} overflow-hidden`}>
+                                              <div className={`h-full rounded-full transition-all duration-1000 ${isMax ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'bg-gray-500'}`} style={{ width: `${prob * 100}%` }}></div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center text-gray-500">
+                                <FlaskConical size={48} className="opacity-20 mb-4" />
+                                <p className="font-semibold text-gray-400">Awaiting Input</p>
+                                <p className="text-xs text-gray-500 max-w-[200px] mt-2">Fill the form and hit Run Prediction to test the model.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                   </>
                 );
               })()}
 
               {/* ── UNSUPERVISED ── */}
-              {results.task_type === 'UNSUPERVISED' && results.unsupervised_results && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    <StatCard isDarkMode={isDarkMode} icon={<GitBranch size={20} className="text-purple-400" />} label="Optimal Clusters (k)" value={results.unsupervised_results.kmeans?.best_k ?? '—'} color="bg-purple-500" />
-                    <StatCard isDarkMode={isDarkMode} icon={<Layers size={20} className="text-indigo-400" />} label="PCA Components" value={results.unsupervised_results.pca?.explained_variance_ratio?.length ?? '—'} sub="Dimensionality reduction" color="bg-indigo-500" />
-                    <StatCard isDarkMode={isDarkMode} icon={<Database size={20} className="text-cyan-400" />} label="Dataset Rows" value={results.preprocessing?.original_shape?.[0]?.toLocaleString() ?? '—'} color="bg-cyan-500" />
-                  </div>
+              {results.task_type === 'UNSUPERVISED' && results.unsupervised_results && (() => {
+                const pca = results.unsupervised_results.pca;
+                const kmeans = results.unsupervised_results.kmeans;
+                const hier = results.unsupervised_results.hierarchical;
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className={`p-6 rounded-2xl border ${card}`}>
-                      <h3 className="text-base font-bold mb-5">PCA 2D Projection</h3>
-                      <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ScatterChart margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} />
-                            <XAxis dataKey="x" type="number" stroke="#6b7280" name="PC 1" />
-                            <YAxis dataKey="y" type="number" stroke="#6b7280" name="PC 2" />
-                            <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
-                            <Scatter data={(results.unsupervised_results.pca?.projections || []).slice(0, 500)} fill="#8b5cf6" opacity={0.7} />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
+                // Color mapping for clusters
+                const clusterColors = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+
+                // 1. Process PCA data with Cluster Labels
+                const scatterData = (pca?.projections || []).map((p: any, i: number) => ({
+                  ...p,
+                  cluster: kmeans?.best_labels?.[i] !== undefined ? `Cluster ${kmeans.best_labels[i]}` : 'Unassigned',
+                  clusterId: kmeans?.best_labels?.[i] || 0
+                })).slice(0, 1000); // cap at 1k points for performance
+
+                // Group scatter data by cluster for Recharts
+                const groupedScatter = scatterData.reduce((acc: any, point: any) => {
+                  if (!acc[point.clusterId]) acc[point.clusterId] = [];
+                  acc[point.clusterId].push(point);
+                  return acc;
+                }, {});
+
+                // 2. Cluster Distribution
+                const distribution = Object.keys(groupedScatter).map(key => ({
+                  cluster: `Cluster ${key}`,
+                  count: groupedScatter[key].length,
+                  fill: clusterColors[Number(key) % clusterColors.length]
+                })).sort((a, b) => b.count - a.count);
+
+                // 3. Hierarchical Merge Distances (take top 30)
+                const hDistances = (hier?.linkage_matrix || []).slice(-30).map((row: any, i: number) => ({
+                  step: `Merge ${i + 1}`,
+                  distance: row.distance
+                }));
+
+                const maxSil = Math.max(...(kmeans?.elbow_silhouette_curve || []).map((m: any) => m.silhouette));
+                const totalVariance = pca?.explained_variance_ratio ? (pca.explained_variance_ratio[0] + pca.explained_variance_ratio[1]) * 100 : 0;
+
+                return (
+                  <div className="space-y-6">
+                    {/* Stat Cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <StatCard isDarkMode={isDarkMode} icon={<GitBranch size={20} className="text-purple-400" />} label="Optimal Clusters (k)" value={kmeans?.best_k ?? '—'} sub="via Silhouette Score" color="bg-purple-500" />
+                      <StatCard isDarkMode={isDarkMode} icon={<Award size={20} className="text-yellow-400" />} label="Peak Silhouette" value={maxSil > -1 ? maxSil.toFixed(3) : '—'} sub="Cluster separation quality" color="bg-yellow-500" />
+                      <StatCard isDarkMode={isDarkMode} icon={<Layers size={20} className="text-indigo-400" />} label="PCA Variance (2D)" value={totalVariance > 0 ? `${totalVariance.toFixed(1)}%` : '—'} sub="Data retained in 2D plot" color="bg-indigo-500" />
+                      <StatCard isDarkMode={isDarkMode} icon={<Network size={20} className="text-cyan-400" />} label="Hierarchical Merges" value={hier?.linkage_matrix?.length?.toLocaleString() ?? '—'} sub="Agglomerative steps" color="bg-cyan-500" />
                     </div>
-                    <div className={`p-6 rounded-2xl border ${card}`}>
-                      <h3 className="text-base font-bold mb-1">K-Means Silhouette Score</h3>
-                      <p className="text-xs text-gray-500 mb-4">Peak = optimal number of clusters</p>
-                      <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={results.unsupervised_results.kmeans?.elbow_silhouette_curve || []} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} />
-                            <XAxis dataKey="k" stroke="#6b7280" />
-                            <YAxis stroke="#6b7280" />
-                            <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
-                            <Line type="monotone" dataKey="silhouette" stroke="#f59e0b" strokeWidth={3} activeDot={{ r: 8 }} name="Silhouette" />
-                          </LineChart>
-                        </ResponsiveContainer>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      
+                      {/* Cluster Assignments Scatter (Takes up 2 columns) */}
+                      <div className={`p-6 rounded-2xl border lg:col-span-2 ${card}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-base font-bold flex items-center gap-2"><Target size={18} className="text-emerald-400" /> Segmented Clusters (PCA Projection)</h3>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-5">Data points colored automatically by K-Means cluster assignment</p>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} />
+                              <XAxis dataKey="x" type="number" stroke="#6b7280" name="Principal Component 1" tickFormatter={(v) => v.toFixed(1)} />
+                              <YAxis dataKey="y" type="number" stroke="#6b7280" name="Principal Component 2" tickFormatter={(v) => v.toFixed(1)} />
+                              <Tooltip 
+                                cursor={{ strokeDasharray: '3 3' }} 
+                                contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }}
+                                formatter={(val: any, name) => [val.toFixed(2), name === 'clusterId' ? 'Cluster' : name]}
+                              />
+                              <Legend iconType="circle" />
+                              {Object.keys(groupedScatter).map((clusterId) => (
+                                <Scatter 
+                                  key={clusterId}
+                                  name={`Cluster ${clusterId}`}
+                                  data={groupedScatter[clusterId]} 
+                                  fill={clusterColors[Number(clusterId) % clusterColors.length]} 
+                                  opacity={0.8}
+                                />
+                              ))}
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <AiInsightBlock sectionKey="the PCA projection" text={insights?.pca} isDarkMode={isDarkMode} />
                       </div>
+
+                      {/* Cluster Sizes (Bar Chart) */}
+                      <div className={`p-6 rounded-2xl border ${card}`}>
+                        <h3 className="text-base font-bold mb-1 flex items-center gap-2"><Database size={18} className="text-purple-400" /> Cluster Distribution</h3>
+                        <p className="text-xs text-gray-500 mb-5">Number of data points per segment</p>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={distribution} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} horizontal={false} />
+                              <XAxis type="number" stroke="#6b7280" />
+                              <YAxis dataKey="cluster" type="category" stroke="#6b7280" width={60} tick={{fontSize: 11}} />
+                              <Tooltip cursor={{fill: isDarkMode ? '#1f2937' : '#f3f4f6'}} contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
+                              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                {distribution.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                              </Bar>
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <AiInsightBlock sectionKey="the cluster distribution" text={insights?.distribution} isDarkMode={isDarkMode} />
+                      </div>
+
+                      {/* K-Means Elbow/Silhouette */}
+                      <div className={`p-6 rounded-2xl border ${card}`}>
+                        <h3 className="text-base font-bold mb-1 flex items-center gap-2"><TrendingUp size={18} className="text-yellow-400" /> K-Means Silhouette Scores</h3>
+                        <p className="text-xs text-gray-500 mb-4">Peak value dictates the optimal K (clusters)</p>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={kmeans?.elbow_silhouette_curve || []} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} />
+                              <XAxis dataKey="k" stroke="#6b7280" />
+                              <YAxis stroke="#6b7280" domain={['auto', 'auto']} />
+                              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
+                              <Line type="monotone" dataKey="silhouette" stroke="#f59e0b" strokeWidth={3} activeDot={{ r: 8 }} name="Score" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <AiInsightBlock sectionKey="the silhouette score" text={insights?.silhouette} isDarkMode={isDarkMode} />
+                      </div>
+
+                      {/* Hierarchical Clustering Merge Distances */}
+                      <div className={`p-6 rounded-2xl border lg:col-span-2 ${card}`}>
+                        <h3 className="text-base font-bold mb-1 flex items-center gap-2"><GitBranch size={18} className="text-cyan-400" /> Hierarchical Merge Distances</h3>
+                        <p className="text-xs text-gray-500 mb-4">Distance metric jumps indicate significant cluster merges (last 30 steps of dendrogram)</p>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={hDistances} margin={{ top: 10, right: 10, left: -10, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1f2937' : '#f3f4f6'} vertical={false} />
+                              <XAxis dataKey="step" stroke="#6b7280" tick={{fontSize: 10}} angle={-45} textAnchor="end" />
+                              <YAxis stroke="#6b7280" />
+                              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
+                              <Bar dataKey="distance" fill="#06b6d4" radius={[4, 4, 0, 0]} name="Merge Distance" />
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <AiInsightBlock sectionKey="the cluster distribution" text={insights?.distribution} isDarkMode={isDarkMode} />
+                      </div>
+
                     </div>
                   </div>
-                </div>
+                );
+              })()}
+                </>
               )}
-
             </div>
           )}
 
