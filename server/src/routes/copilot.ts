@@ -68,7 +68,7 @@ If they just ask a question, answer it concisely.
 
         const chatCompletion = await groq.chat.completions.create({
             messages: [systemMessage, ...messages],
-            model: 'llama3-8b-8192', // or llama3-70b-8192
+            model: 'llama-3.1-70b-versatile', // or llama3-70b-8192
             tools: tools,
             tool_choice: "auto",
         });

@@ -64,7 +64,7 @@ ${JSON.stringify(issues, null, 2)}`;
       
       const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
-        model: 'llama3-8b-8192',
+        model: 'llama-3.1-8b-instant',
       });
       llmExplanation = completion.choices[0]?.message?.content || "";
     } else if (issues.length === 0) {
@@ -147,7 +147,7 @@ app.post('/api/webhook/ml-engine', async (req, res) => {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            model: 'llama3-8b-8192',
+                            model: 'llama-3.1-8b-instant',
                             messages: [{ role: 'user', content: prompt }]
                         })
                     });
