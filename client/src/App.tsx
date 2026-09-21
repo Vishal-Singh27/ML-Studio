@@ -540,7 +540,7 @@ function App() {
         {/* Logo */}
         <div className="p-6 border-b border-gray-800">
           <button onClick={() => setView('upload')} className="w-full text-left font-black text-2xl flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
-            <img src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} alt="ML Studio Logo" className="w-14 h-14 -ml-2 object-contain scale-125" />
+            <img src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} alt="ML Studio Logo" className={`w-14 h-14 -ml-2 object-contain scale-125 ${isDarkMode ? 'mix-blend-screen' : 'mix-blend-multiply'}`} />
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">ML Studio</span>
           </button>
           
