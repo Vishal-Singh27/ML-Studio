@@ -837,8 +837,8 @@ function App() {
                               <YAxis yAxisId="right" orientation="right" stroke="#6b7280" tickFormatter={v => `${v}%`} domain={[0, 100]} />
                               <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} formatter={(v: any) => [`${v}%`]} />
                               <Legend />
-                              <Bar yAxisId="left" dataKey="individual" name="Individual %" fill="#8b5cf6" radius={[4,4,0,0]} />
-                              <Line yAxisId="right" type="monotone" dataKey="cumulative" name="Cumulative %" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: '#10b981' }} />
+                              <Bar isAnimationActive={false} yAxisId="left" dataKey="individual" name="Individual %" fill="#8b5cf6" radius={[4,4,0,0]} />
+                              <Line isAnimationActive={false} yAxisId="right" type="monotone" dataKey="cumulative" name="Cumulative %" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: '#10b981' }} />
                             </ComposedChart>
                           </ResponsiveContainer>
                         </div>
@@ -924,8 +924,8 @@ function App() {
                                 <YAxis stroke="#6b7280" domain={[0, 100]} tickFormatter={v => `${v}%`} />
                                 <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} formatter={(v: any) => [`${v}%`]} />
                                 <Legend />
-                                <Bar dataKey="Accuracy" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="F1" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                <Bar isAnimationActive={false} dataKey="Accuracy" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                <Bar isAnimationActive={false} dataKey="F1" fill="#10b981" radius={[4, 4, 0, 0]} />
                               </ComposedChart>
                             </ResponsiveContainer>
                           </div>
@@ -949,7 +949,7 @@ function App() {
                                 <XAxis dataKey="fpr" type="number" domain={[0, 1]} stroke="#6b7280" label={{ value: 'False Positive Rate', position: 'insideBottom', offset: -5, fill: '#6b7280', fontSize: 11 }} />
                                 <YAxis type="number" domain={[0, 1]} stroke="#6b7280" label={{ value: 'True Positive Rate', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 11 }} />
                                 <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
-                                <Line type="monotone" dataKey="tpr" stroke="#10b981" strokeWidth={3} dot={false} name="ROC Curve" />
+                                <Line isAnimationActive={false} type="monotone" dataKey="tpr" stroke="#10b981" strokeWidth={3} dot={false} name="ROC Curve" />
                                 {/* Diagonal reference line — fake it with data */}
                               </LineChart>
                             </ResponsiveContainer>
@@ -966,9 +966,9 @@ function App() {
                                 <RadarChart data={radarData}>
                                   <PolarGrid stroke={isDarkMode ? '#1f2937' : '#e5e7eb'} />
                                   <PolarAngleAxis dataKey="model" tick={{ fontSize: 11, fill: isDarkMode ? '#9ca3af' : '#6b7280' }} />
-                                  <Radar name="Accuracy" dataKey="Accuracy" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} />
-                                  <Radar name="F1" dataKey="F1" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
-                                  <Radar name="AUC" dataKey="AUC" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.15} />
+                                  <Radar isAnimationActive={false} name="Accuracy" dataKey="Accuracy" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} />
+                                  <Radar isAnimationActive={false} name="F1" dataKey="F1" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
+                                  <Radar isAnimationActive={false} name="AUC" dataKey="AUC" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.15} />
                                   <Legend />
                                   <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
                                 </RadarChart>
@@ -1093,7 +1093,7 @@ function App() {
                                           <XAxis type="number" stroke="#6b7280" />
                                           <YAxis type="category" dataKey="feature" stroke="#6b7280" tick={{fontSize: 10}} width={100} />
                                           <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '8px' }} formatter={(v: any) => v.toFixed(4)} />
-                                          <Bar dataKey="importance" fill="#facc15" radius={[0, 4, 4, 0]} />
+                                          <Bar isAnimationActive={false} dataKey="importance" fill="#facc15" radius={[0, 4, 4, 0]} />
                                         </ComposedChart>
                                       </ResponsiveContainer>
                                     </div>
@@ -1172,8 +1172,8 @@ function App() {
                                       <YAxis stroke="#6b7280" />
                                       <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
                                       <Legend />
-                                      <Line type="monotone" dataKey="loss" stroke="#ef4444" strokeWidth={2} dot={false} name="Train Loss" />
-                                      <Line type="monotone" dataKey="val_loss" stroke="#f97316" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Val Loss" />
+                                      <Line isAnimationActive={false} type="monotone" dataKey="loss" stroke="#ef4444" strokeWidth={2} dot={false} name="Train Loss" />
+                                      <Line isAnimationActive={false} type="monotone" dataKey="val_loss" stroke="#f97316" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Val Loss" />
                                     </LineChart>
                                   </ResponsiveContainer>
                                 </div>
@@ -1188,8 +1188,8 @@ function App() {
                                       <YAxis stroke="#6b7280" domain={[0, 1]} tickFormatter={v => `${(v * 100).toFixed(0)}%`} />
                                       <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} formatter={(v: any) => [`${(v * 100).toFixed(1)}%`]} />
                                       <Legend />
-                                      <Line type="monotone" dataKey="accuracy" stroke="#6366f1" strokeWidth={2} dot={false} name="Train Acc" />
-                                      <Line type="monotone" dataKey="val_accuracy" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Val Acc" />
+                                      <Line isAnimationActive={false} type="monotone" dataKey="accuracy" stroke="#6366f1" strokeWidth={2} dot={false} name="Train Acc" />
+                                      <Line isAnimationActive={false} type="monotone" dataKey="val_accuracy" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Val Acc" />
                                     </LineChart>
                                   </ResponsiveContainer>
                                 </div>
@@ -1402,7 +1402,7 @@ function App() {
                               />
                               <Legend iconType="circle" />
                               {Object.keys(groupedScatter).map((clusterId) => (
-                                <Scatter 
+                                <Scatter isAnimationActive={false} 
                                   key={clusterId}
                                   name={`Cluster ${clusterId}`}
                                   data={groupedScatter[clusterId]} 
@@ -1427,7 +1427,7 @@ function App() {
                               <XAxis type="number" stroke="#6b7280" />
                               <YAxis dataKey="cluster" type="category" stroke="#6b7280" width={60} tick={{fontSize: 11}} />
                               <Tooltip cursor={{fill: isDarkMode ? '#1f2937' : '#f3f4f6'}} contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
-                              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                              <Bar isAnimationActive={false} dataKey="count" radius={[0, 4, 4, 0]}>
                                 {distribution.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry.fill} />
                                 ))}
@@ -1449,7 +1449,7 @@ function App() {
                               <XAxis dataKey="k" stroke="#6b7280" />
                               <YAxis stroke="#6b7280" domain={['auto', 'auto']} />
                               <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
-                              <Line type="monotone" dataKey="silhouette" stroke="#f59e0b" strokeWidth={3} activeDot={{ r: 8 }} name="Score" />
+                              <Line isAnimationActive={false} type="monotone" dataKey="silhouette" stroke="#f59e0b" strokeWidth={3} activeDot={{ r: 8 }} name="Score" />
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
@@ -1467,7 +1467,7 @@ function App() {
                               <XAxis dataKey="step" stroke="#6b7280" tick={{fontSize: 10}} angle={-45} textAnchor="end" />
                               <YAxis stroke="#6b7280" />
                               <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', borderColor: '#374151', borderRadius: '10px' }} />
-                              <Bar dataKey="distance" fill="#06b6d4" radius={[4, 4, 0, 0]} name="Merge Distance" />
+                              <Bar isAnimationActive={false} dataKey="distance" fill="#06b6d4" radius={[4, 4, 0, 0]} name="Merge Distance" />
                             </ComposedChart>
                           </ResponsiveContainer>
                         </div>
