@@ -1,0 +1,51 @@
+FROM ubuntu:22.04
+
+# Avoid prompts during apt installs
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Install System Dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    redis-server \
+    nginx \
+    python3.10 \
+    python3-pip \
+    python3.10-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Node.js (v20)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g typescript
+
+# 3. Setup App Directory
+WORKDIR /app
+
+# 4. Build React Client
+COPY client/ ./client/
+RUN cd client && npm install && npm run build
+
+# 5. Build Node Server
+COPY server/ ./server/
+RUN cd server && npm install && npm run build
+
+# 6. Setup Python ML Engine
+COPY ml-engine/ ./ml-engine/
+RUN cd ml-engine && pip install --no-cache-dir -r requirements.txt
+
+# 7. Configure Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 8. Add Startup Script
+COPY start.sh /app/start.sh
+
+# Environment variables
+ENV REDIS_HOST=127.0.0.1
+ENV REDIS_PORT=6379
+ENV ML_ENGINE_URL=http://127.0.0.1:8000
+
+# Expose Hugging Face Port
+EXPOSE 7860
+
+# Run everything!
+CMD ["/app/start.sh"]
