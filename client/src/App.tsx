@@ -362,18 +362,35 @@ function App() {
   }, [file]);
 
   const [targetColumn, setTargetColumn] = useState<string>('');
+  const searchParams = new URLSearchParams(window.location.search);
+  const initialJobId = searchParams.get('job');
+  const initialTab = searchParams.get('tab') as any || 'eda';
+
   const [enableDL, setEnableDL] = useState<boolean>(true);
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'queued' | 'success' | 'error'>('idle');
-  const [jobId, setJobId] = useState<string | null>(null);
-    const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'queued' | 'success' | 'error'>(initialJobId ? 'queued' : 'idle');
+  const [jobId, setJobId] = useState<string | null>(initialJobId);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   useEffect(() => {
     document.body.style.backgroundColor = isDarkMode ? '#0a0a0f' : '#f9fafb';
   }, [isDarkMode]);
+
   const [results, setResults] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [cmModel, setCmModel] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'eda' | 'overview' | 'models' | 'deep_learning' | 'inference'>('eda');
+  const [activeTab, setActiveTab] = useState<'eda' | 'overview' | 'models' | 'deep_learning' | 'inference'>(initialTab);
+
+  // URL Sync
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (jobId) url.searchParams.set('job', jobId);
+    else url.searchParams.delete('job');
+    
+    if (activeTab !== 'eda') url.searchParams.set('tab', activeTab);
+    else url.searchParams.delete('tab');
+
+    window.history.replaceState({}, '', url);
+  }, [jobId, activeTab]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [insights, setInsights] = useState<any>(null);
@@ -550,7 +567,7 @@ function App() {
                 <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
                 <span className="text-xs font-semibold text-indigo-300">Training Active</span>
               </div>
-              <p className="text-[11px] text-gray-500">Job #{jobId} running…</p>
+              <p className="text-[11px] text-gray-500">Pipeline running…</p>
             </div>
           )}
           {status === 'success' && (
@@ -756,7 +773,7 @@ function App() {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <span className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center">Job #{results.job_id}</span>
+                  
                   <button onClick={handleGenerateInsights} disabled={isGeneratingInsights} className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-sm font-bold flex items-center gap-2 shadow-lg shadow-purple-500/25 transition-all disabled:opacity-50">
                     {isGeneratingInsights ? <Activity size={16} className="animate-spin" /> : <Sparkles size={16} />} 
                     {isGeneratingInsights ? 'Analyzing...' : 'AI Insights'}
