@@ -9,3 +9,4 @@ python-multipart
 scipy
 joblib
 requests
+shap

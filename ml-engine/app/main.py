@@ -161,7 +161,44 @@ def predict_single(request: PredictRequest):
             except Exception:
                 pass
                 
-        return {"prediction": str(pred), "probabilities": proba}
+        # Calculate SHAP values
+        shap_data = None
+        try:
+            if hasattr(model, "named_steps"):
+                import shap
+                core_model = model.named_steps["model"]
+                core_preprocessor = model.named_steps["preprocessor"]
+                
+                X_processed = core_preprocessor.transform(df)
+                feature_names = core_preprocessor.get_feature_names_out().tolist()
+                
+                # Check if it's a tree model
+                import sklearn
+                if isinstance(core_model, (sklearn.ensemble.RandomForestClassifier, sklearn.ensemble.GradientBoostingClassifier)):
+                    explainer = shap.TreeExplainer(core_model)
+                    
+                    # shap_values can return different shapes depending on shap version and model type
+                    shap_val = explainer.shap_values(X_processed)
+                    
+                    # For binary classification, shap_val is often a list of 2 arrays [shape(1, N), shape(1, N)]
+                    if isinstance(shap_val, list):
+                        # Use the explanation for the predicted class
+                        class_idx = int(pred) if len(shap_val) > int(pred) else 1
+                        shap_arr = shap_val[class_idx][0]
+                    else:
+                        if len(shap_val.shape) == 3:
+                            class_idx = int(pred) if shap_val.shape[2] > int(pred) else 1
+                            shap_arr = shap_val[0, :, class_idx]
+                        else:
+                            shap_arr = shap_val[0]
+                            
+                    shap_data = [{"feature": f, "value": float(v)} for f, v in zip(feature_names, shap_arr)]
+                    shap_data = sorted(shap_data, key=lambda x: abs(x["value"]), reverse=True)[:10] # Top 10
+        except Exception as e:
+            print("SHAP calculation failed:", e)
+            pass
+                
+        return {"prediction": str(pred), "probabilities": proba, "shap_values": shap_data}
     except Exception as e:
         import traceback
         traceback.print_exc()
