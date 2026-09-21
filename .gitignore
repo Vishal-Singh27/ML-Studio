@@ -40,3 +40,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+*.py
+*.js
+*.bak
+*.patch
+*.bak2
+!server/**/*.js
