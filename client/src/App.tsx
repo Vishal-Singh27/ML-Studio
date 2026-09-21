@@ -1210,8 +1210,8 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 <Bar isAnimationActive={true} animationDuration={400} animationEasing="ease-out" dataKey="F1" fill="#10b981" radius={[4, 4, 0, 0]} />
                               </ComposedChart>
                             </ResponsiveContainer>
-                          {insights?.accuracy_f1 && <div className="mt-4"><AiInsightBlock sectionKey="the accuracy vs F1 score chart" text={insights.accuracy_f1} isDarkMode={isDarkMode} /></div>}
                           </div>
+                          {insights?.accuracy_f1 && <div className="mt-4"><AiInsightBlock sectionKey="the accuracy vs F1 score chart" text={insights.accuracy_f1} isDarkMode={isDarkMode} /></div>}
                           </div>
 
                         {/* ROC Curve */}
@@ -1236,8 +1236,8 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 {/* Diagonal reference line — fake it with data */}
                               </LineChart>
                             </ResponsiveContainer>
-                          {insights?.roc_curve && <div className="mt-4"><AiInsightBlock sectionKey="the ROC curve" text={insights.roc_curve} isDarkMode={isDarkMode} /></div>}
                           </div>
+                          {insights?.roc_curve && <div className="mt-4"><AiInsightBlock sectionKey="the ROC curve" text={insights.roc_curve} isDarkMode={isDarkMode} /></div>}
                           </div>
 
                         {/* Radar Chart */}
@@ -1486,9 +1486,9 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                       <Line isAnimationActive={true} animationDuration={400} animationEasing="ease-out" type="monotone" dataKey="val_accuracy" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Val Acc" />
                                     </LineChart>
                                   </ResponsiveContainer>
-                                {insights?.deep_learning && <div className="mt-4"><AiInsightBlock sectionKey="the deep learning training history" text={insights.deep_learning} isDarkMode={isDarkMode} /></div>}
+                                </div>
                           </div>
-                          </div>
+                          {insights?.deep_learning && <div className="mt-4"><AiInsightBlock sectionKey="the deep learning training history" text={insights.deep_learning} isDarkMode={isDarkMode} /></div>}
                         </div>
                           </div>
                         )}
@@ -1499,8 +1499,8 @@ print(f"Test Accuracy: {accuracy:.4f}")
                             <h3 className="text-base font-bold mb-5 flex items-center gap-2"><FlaskConical size={18} className="text-purple-400" /> MLP Confusion Matrix</h3>
                             <div className="flex justify-center">
                               <ConfusionMatrix matrix={results.dl_results.evaluation.confusion_matrix} isDarkMode={isDarkMode} />
-                            {insights?.dl_confusion_matrix && <div className="mt-4"><AiInsightBlock sectionKey="the MLP confusion matrix" text={insights.dl_confusion_matrix} isDarkMode={isDarkMode} /></div>}
-                          </div>
+                            </div>
+                          {insights?.dl_confusion_matrix && <div className="mt-4"><AiInsightBlock sectionKey="the MLP confusion matrix" text={insights.dl_confusion_matrix} isDarkMode={isDarkMode} /></div>}
                           </div>
                         )}
                       </div>
