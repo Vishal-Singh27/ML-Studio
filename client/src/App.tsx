@@ -379,6 +379,7 @@ function App() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [cmModel, setCmModel] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'eda' | 'overview' | 'models' | 'deep_learning' | 'inference'>(initialTab);
+  const [view, setView] = useState<'upload' | 'dashboard'>(initialJobId ? 'dashboard' : 'upload');
 
   // URL Sync
   useEffect(() => {
@@ -478,6 +479,7 @@ function App() {
   const handleUpload = async () => {
     if (!file) return;
     setStatus('uploading');
+    setView('dashboard');
     const formData = new FormData();
     formData.append('dataset', file);
     formData.append('target', targetColumn);
@@ -547,8 +549,8 @@ function App() {
           <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 px-3 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>Workspace</p>
           <nav className="space-y-1">
             {[
-              { icon: <Database size={18} />, label: 'New Analysis', active: status === 'idle', onClick: reset },
-              { icon: <Activity size={18} />, label: 'Results Dashboard', active: status !== 'idle', onClick: () => {} },
+              { icon: <Database size={18} />, label: 'New Analysis', active: view === 'upload', onClick: () => setView('upload') },
+              { icon: <Activity size={18} />, label: 'Results Dashboard', active: view === 'dashboard', onClick: () => setView('dashboard') },
             ].map(({ icon, label, active, onClick }) => (
               <button key={label} onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
@@ -561,7 +563,7 @@ function App() {
           </nav>
 
           {/* Status widget */}
-          {status === 'queued' && (
+          {status === 'queued' && view === 'upload' && (
             <div className="mt-6 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
@@ -604,7 +606,7 @@ function App() {
               </p>
             </div>
             {status === 'success' && (
-              <button onClick={reset} className={`px-4 py-2 text-sm font-semibold rounded-xl border transition-colors ${isDarkMode ? 'border-gray-700 hover:bg-gray-800 text-gray-300' : 'border-gray-300 hover:bg-gray-100 text-gray-700'}`}>
+              <button onClick={() => setView('upload')} className={`px-4 py-2 text-sm font-semibold rounded-xl border transition-colors ${isDarkMode ? 'border-gray-700 hover:bg-gray-800 text-gray-300' : 'border-gray-300 hover:bg-gray-100 text-gray-700'}`}>
                 + New Analysis
               </button>
             )}
@@ -614,7 +616,18 @@ function App() {
         <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
 
           {/* ─── IDLE: Upload Zone ──────────────────────────────────────── */}
-          {status === 'idle' && (
+                    {view === 'dashboard' && status === 'idle' && (
+            <div className={`p-16 text-center rounded-3xl border-2 border-dashed ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+              <Activity size={48} className="mx-auto text-gray-500 opacity-20 mb-4" />
+              <h2 className="text-xl font-bold text-gray-400 mb-2">No Active Pipeline</h2>
+              <p className="text-gray-500 mb-6">You haven't trained a model or run an analysis yet.</p>
+              <button onClick={() => setView('upload')} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all">
+                Start New Analysis
+              </button>
+            </div>
+          )}
+
+          {view === 'upload' && (
             <div className="space-y-6">
               <div
                 onDrop={handleDrop}
@@ -722,7 +735,7 @@ function App() {
           )}
 
           {/* ─── QUEUED: Live Pipeline View ───────────────────────────────── */}
-          {status === 'queued' && (
+          {status === 'queued' && view === 'upload' && (
             <div className={`p-10 rounded-3xl border text-center ${isDarkMode ? 'bg-[#12121a] border-gray-800' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center justify-center gap-6 mb-8">
                 {[
@@ -757,7 +770,7 @@ function App() {
           )}
 
           {/* ─── SUCCESS DASHBOARD ────────────────────────────────────────── */}
-          {status === 'success' && results && (
+          {view === 'dashboard' && status === 'success' && results && (
             <div className="space-y-6">
 
               {/* Success banner */}
