@@ -1,11 +1,12 @@
 import express from 'express';
 import Groq from 'groq-sdk';
-import JobResult from '../models/JobResult';
+import Redis from 'ioredis';
 import { Queue } from 'bullmq';
 
 const router = express.Router();
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const jobQueue = new Queue('ml-jobs', { connection: { url: REDIS_URL } });
+const redisDb = new Redis(REDIS_URL);
 
 router.post('/chat', async (req, res) => {
     try {
@@ -18,7 +19,8 @@ router.post('/chat', async (req, res) => {
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         
         // Fetch context
-        const job = await JobResult.findOne({ job_id });
+        const cachedStr = await redisDb.get(`job_result:${job_id}`);
+        const job = cachedStr ? JSON.parse(cachedStr) : null;
         let contextText = "No job context found.";
         let datasetPath = "";
         let targetColumn = "";
@@ -105,11 +107,11 @@ Be concise, confident, and professional.`
             });
             
             // Save initial status
-            await JobResult.create({
+            await redisDb.set(`job_result:${newJobId}`, JSON.stringify({
                 job_id: newJobId,
                 status: 'processing',
                 task_type: 'PENDING'
-            });
+            }), 'EX', 60 * 60 * 24);
             
             // Return to chat
             const reply = `I have updated the pipeline configuration and kicked off a new training run (Job #${newJobId})! 
