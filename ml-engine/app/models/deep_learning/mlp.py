@@ -1,4 +1,11 @@
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
+os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+
 import tensorflow as tf
+tf.config.threading.set_inter_op_parallelism_threads(1)
+tf.config.threading.set_intra_op_parallelism_threads(1)
 from tensorflow.keras import layers, models, callbacks
 
 def build_and_train_mlp(X_train, y_train, X_test, y_test, num_classes: int, save_path: str):

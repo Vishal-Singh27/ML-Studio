@@ -1,4 +1,4 @@
-from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, f1_score, mean_squared_error, accuracy_score
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, f1_score, mean_squared_error, accuracy_score, classification_report
 import numpy as np
 
 def evaluate_classification(y_true, y_pred, y_proba=None):
@@ -12,6 +12,12 @@ def evaluate_classification(y_true, y_pred, y_proba=None):
         "confusion_matrix": confusion_matrix(y_true, y_pred).tolist()
     }
     
+    try:
+        clf_rep = classification_report(y_true, y_pred, output_dict=True)
+        metrics["classification_report"] = clf_rep
+    except Exception:
+        pass
+
     # Calculate RMSE (Even though it's typically for regression, we calculate it if requested)
     try:
         metrics["rmse"] = float(np.sqrt(mean_squared_error(y_true, y_pred)))

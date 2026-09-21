@@ -124,6 +124,114 @@ app.get('/api/jobs/:id', async (req, res) => {
     }
 });
 
+// Endpoint for AI Insights using Groq
+app.post('/api/insights', async (req, res) => {
+    try {
+        const { summary } = req.body;
+        const apiKey = process.env.GROQ_API_KEY;
+        
+        if (!apiKey) {
+            return res.status(400).json({ error: 'GROQ_API_KEY is not set in the server environment.' });
+        }
+
+        const prompt = `You are an expert AI Data Scientist. Analyze the ML pipeline results and output a JSON object containing specific insights for different UI sections.
+Return ONLY a valid JSON object matching this exact structure (use markdown for text, use bolding, avoid raw tables, keep it concise and punchy):
+{
+  "overall": "2-3 sentences summarizing the overall outcome (dataset size, best model/clusters, main takeaway).",
+  "eda": "1-2 short paragraphs analyzing the EDA: missing values, skewness, strong correlations, outlier counts, and PCA variance. (Always provided).",
+  "leaderboard": "Insight on model comparison and metrics (Supervised only, otherwise null).",
+  "confusion_matrix": "Insight on classification errors/accuracy (Supervised only, otherwise null).",
+  "deep_learning": "Insight on DL training curves (Supervised DL only, otherwise null).",
+  "pca": "Insight on PCA projection and cluster separation (Unsupervised only, otherwise null).",
+  "distribution": "Insight on cluster sizes/balance (Unsupervised only, otherwise null).",
+  "silhouette": "Insight on the Silhouette score and optimal K (Unsupervised only, otherwise null)."
+}
+
+Pipeline Results:
+${JSON.stringify(summary, null, 2)}`;
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'openai/gpt-oss-120b',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.5,
+                response_format: { type: "json_object" }
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Groq API Error: ${errText}`);
+        }
+
+        const data = await response.json();
+        const jsonResult = JSON.parse(data.choices[0].message.content);
+        res.json({ insights: jsonResult });
+    } catch (error: any) {
+        console.error('Insights Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to generate insights' });
+    }
+});
+
+
+// Endpoint for AI Follow-up Questions
+
+app.post('/api/jobs/:id/predict', async (req, res) => {
+    try {
+        const job_id = req.params.id;
+        const { model_name, features } = req.body;
+        
+        const payload = {
+            job_id,
+            model_name,
+            features
+        };
+        
+        const mlResponse = await axios.post('http://ml-engine:8000/predict', payload);
+        res.json(mlResponse.data);
+    } catch (error: any) {
+        console.error("Prediction error:", error?.response?.data || error.message);
+        res.status(500).json({ error: error?.response?.data?.detail || "Prediction failed" });
+    }
+});
+
+app.post('/api/insights/followup', async (req, res) => {
+    try {
+        const { section, question, baseInsight } = req.body;
+        const apiKey = process.env.GROQ_API_KEY;
+        if (!apiKey) return res.status(400).json({ error: 'GROQ_API_KEY is not set.' });
+
+        const prompt = `You are an expert AI Data Scientist. The user is asking a follow-up question about the "${section}" section of their machine learning results.
+Original insight context: "${baseInsight}"
+
+User's question: "${question}"
+
+Answer concisely and clearly as an expert. Keep it under 4 sentences. Use markdown for bolding/lists if helpful.`;
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'openai/gpt-oss-120b',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.5,
+                max_tokens: 500
+            })
+        });
+
+        if (!response.ok) throw new Error(await response.text());
+        const data = await response.json();
+        res.json({ answer: data.choices[0].message.content });
+    } catch (error: any) {
+        res.status(500).json({ error: 'Failed to answer follow-up' });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

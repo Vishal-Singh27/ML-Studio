@@ -2,12 +2,18 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 import pandas as pd
+import joblib
 import requests
 from .routing import determine_task_type
 from .pipelines.preprocessing import run_preprocessing_pipeline
 
 app = FastAPI(title="ML Studio Engine", version="1.0.0")
 
+
+class PredictRequest(BaseModel):
+    job_id: str
+    model_name: str
+    features: dict
 class TrainRequest(BaseModel):
     job_id: str
     dataset_path: str
@@ -120,4 +126,34 @@ def train_model(request: TrainRequest, background_tasks: BackgroundTasks):
             "message": "Pipeline execution started in the background."
         }
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/predict")
+def predict_single(request: PredictRequest):
+    try:
+        # Load preprocessor
+        preprocessor_path = f"/tmp/{request.job_id}_preprocessor.joblib"
+        preprocessor = joblib.load(preprocessor_path)
+        
+        # Load model
+        model_path = f"/tmp/{request.job_id}_{request.model_name}.joblib"
+        model = joblib.load(model_path)
+        
+        # Convert single dictionary row to DataFrame
+        df = pd.DataFrame([request.features])
+        
+        # Predict (model is now a Pipeline for Supervised tasks!)
+        pred = model.predict(df)[0]
+        
+        proba = None
+        if hasattr(model, "predict_proba"):
+            try:
+                proba = model.predict_proba(df)[0].tolist()
+            except Exception:
+                pass
+                
+        return {"prediction": str(pred), "probabilities": proba}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

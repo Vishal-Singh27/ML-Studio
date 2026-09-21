@@ -2,7 +2,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier, StackingClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.base import clone
 import joblib
+import numpy as np
 
 class SupervisedModelZoo:
     """
@@ -30,75 +33,90 @@ class SupervisedModelZoo:
         }
         self.best_estimators_ = {}
         
-    def tune_models(self, X_train, y_train):
+    def tune_models(self, X_train, y_train, preprocessor=None):
         """
-        Tunes all base models using GridSearchCV with minimal param grids.
-        n_jobs=1 to avoid Mac Docker multiprocessing deadlock.
+        Tunes all base models using GridSearchCV.
+        If a preprocessor is provided, the model is wrapped in an sklearn Pipeline
+        so preprocessing is fit correctly within each CV fold to prevent data leakage.
         """
-        import numpy as np
-
-        # Subsample to max 2000 rows for speed
         if X_train.shape[0] > 2000:
             np.random.seed(42)
             indices = np.random.choice(X_train.shape[0], 2000, replace=False)
-            X_train_sub = X_train[indices]
+            if hasattr(X_train, 'iloc'):
+                X_train_sub = X_train.iloc[indices]
+            else:
+                X_train_sub = X_train[indices]
             y_train_sub = y_train.iloc[indices] if hasattr(y_train, 'iloc') else y_train[indices]
         else:
             X_train_sub = X_train
             y_train_sub = y_train
 
+        self.cv_results_ = {}
+        self.best_params_ = {}
+
         for name, config in self.param_grids.items():
+            if preprocessor is not None:
+                pipe = Pipeline([
+                    ('preprocessor', clone(preprocessor)),
+                    ('model', config["model"])
+                ])
+                params = {f"model__{k}": v for k, v in config["params"].items()}
+            else:
+                pipe = config["model"]
+                params = config["params"]
+
             grid = GridSearchCV(
-                estimator=config["model"],
-                param_grid=config["params"],
+                estimator=pipe,
+                param_grid=params,
                 cv=2,
                 scoring="accuracy",
                 n_jobs=1
             )
             grid.fit(X_train_sub, y_train_sub)
             self.best_estimators_[name] = grid.best_estimator_
+            self.best_params_[name] = grid.best_params_
+            
+            best_idx = grid.best_index_
+            self.cv_results_[name] = {
+                "mean_test_score": float(grid.cv_results_['mean_test_score'][best_idx]),
+                "std_test_score": float(grid.cv_results_['std_test_score'][best_idx])
+            }
 
         return self.best_estimators_
         
     def build_ensemble(self, X_train, y_train):
         """
-        Builds Voting and Stacking classifiers using the tuned base estimators.
+        Builds Voting and Stacking classifiers using the tuned pipeline estimators.
         """
-        import numpy as np
-        
-        # Subsample if dataset is too large to prevent 10 minute training times
         if X_train.shape[0] > 5000:
             np.random.seed(42)
             indices = np.random.choice(X_train.shape[0], 5000, replace=False)
-            X_train_sub = X_train[indices]
+            if hasattr(X_train, 'iloc'):
+                X_train_sub = X_train.iloc[indices]
+            else:
+                X_train_sub = X_train[indices]
             y_train_sub = y_train.iloc[indices] if hasattr(y_train, 'iloc') else y_train[indices]
         else:
             X_train_sub = X_train
             y_train_sub = y_train
             
-        # Select a subset of strong, diverse models for the ensembles
         estimators = [
             ("lr", self.best_estimators_["logistic_regression"]),
             ("rf", self.best_estimators_["random_forest"]),
             ("gb", self.best_estimators_["gradient_boosting"])
         ]
         
-        # Soft voting uses predicted probabilities
-        voting_clf = VotingClassifier(estimators=estimators, voting='soft')
+        voting_clf = VotingClassifier(estimators=estimators, voting='soft', n_jobs=1)
         voting_clf.fit(X_train_sub, y_train_sub)
         self.best_estimators_["voting_ensemble"] = voting_clf
         
-        # Stacking uses predictions of base estimators as features for a final meta-estimator
-        stacking_clf = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
+        stacking_clf = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression(), n_jobs=1)
         stacking_clf.fit(X_train_sub, y_train_sub)
         self.best_estimators_["stacking_ensemble"] = stacking_clf
         
         return self.best_estimators_
 
     def save_models(self, path_prefix: str):
-        """
-        Saves all tuned and ensemble models to disk.
-        """
         paths = {}
         for name, model in self.best_estimators_.items():
             path = f"{path_prefix}_{name}.joblib"

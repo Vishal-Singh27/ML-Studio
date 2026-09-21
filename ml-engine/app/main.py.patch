@@ -1,0 +1,51 @@
+--- ml-engine/app/main.py
++++ ml-engine/app/main.py
+@@ -2,6 +2,7 @@
+ from pydantic import BaseModel
+ from typing import Optional
+ import pandas as pd
++import joblib
+ import requests
+ from .routing import determine_task_type
+ from .pipelines.preprocessing import run_preprocessing_pipeline
+@@ -14,6 +15,11 @@
+     webhook_url: str
+     enable_dl: bool = False
+ 
++class PredictRequest(BaseModel):
++    job_id: str
++    model_name: str
++    features: dict
++
+ def execute_ml_pipeline(job_id: str, dataset_path: str, target_column: str, webhook_url: str, enable_dl: bool):
+     """
+@@ -107,3 +113,29 @@
+         }
+     except Exception as e:
+         raise HTTPException(status_code=500, detail=str(e))
++
++@app.post("/predict")
++def predict_single(request: PredictRequest):
++    try:
++        # Load preprocessor
++        preprocessor_path = f"/tmp/{request.job_id}_preprocessor.joblib"
++        preprocessor = joblib.load(preprocessor_path)
++        
++        # Load model
++        model_path = f"/tmp/{request.job_id}_{request.model_name}.joblib"
++        model = joblib.load(model_path)
++        
++        # Convert single dictionary row to DataFrame
++        df = pd.DataFrame([request.features])
++        
++        # Transform features
++        X_processed = preprocessor.transform(df)
++        
++        # Predict
++        pred = model.predict(X_processed)[0]
++        proba = model.predict_proba(X_processed)[0].tolist() if hasattr(model, "predict_proba") else None
++        
++        return {"prediction": str(pred), "probabilities": proba}
++    except Exception as e:
++        print(e)
++        raise HTTPException(status_code=500, detail=str(e))
