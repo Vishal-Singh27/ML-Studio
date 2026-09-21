@@ -8,6 +8,8 @@ import {
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+const memoizedRemarkPlugins = [remarkGfm];
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ScatterChart, Scatter, ResponsiveContainer, ComposedChart, Bar,
@@ -49,7 +51,7 @@ function AiInsightBlock({ text, sectionKey, isDarkMode }: { text?: string, secti
       <div className="flex items-start gap-3">
         <Sparkles size={18} className="text-purple-400 mt-0.5 shrink-0" />
         <div className={`prose-sm max-w-none leading-relaxed w-full ${isDarkMode ? 'prose-invert prose-p:text-purple-200' : 'prose-p:text-purple-800'}`}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{text}</ReactMarkdown>
         </div>
       </div>
       
@@ -58,7 +60,7 @@ function AiInsightBlock({ text, sectionKey, isDarkMode }: { text?: string, secti
           {chat.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`p-2.5 rounded-lg max-w-[90%] ${msg.role === 'user' ? (isDarkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-900') : (isDarkMode ? 'bg-gray-800/80 text-gray-200' : 'bg-white text-gray-800 border')}`}>
-                {msg.role === 'assistant' ? <div className="prose-sm prose-p:m-0"><ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown></div> : msg.content}
+                {msg.role === 'assistant' ? <div className="prose-sm prose-p:m-0"><ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{msg.content}</ReactMarkdown></div> : msg.content}
               </div>
             </div>
           ))}
@@ -645,7 +647,7 @@ function App() {
 
                         {insights?.eda && (
                           <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.eda}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{insights.eda}</ReactMarkdown>
                           </div>
                         )}
                       </div>
@@ -853,7 +855,7 @@ function App() {
 
               {/* AI Insights Card */}
               {((insights?.overall || insights) || insightError || isGeneratingInsights) && (
-                <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
+                <div className={`mb-6 p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
                   <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
                     <Sparkles size={20} className="text-purple-400" /> AI Data Scientist Insights
@@ -873,7 +875,7 @@ function App() {
 
                   {insights && (
                     <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.overall || (typeof insights === 'string' ? insights : '')}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{insights.overall || (typeof insights === 'string' ? insights : '')}</ReactMarkdown>
                     </div>
                   )}
                 </div>
