@@ -497,7 +497,7 @@ function App() {
     } catch { setStatus('error'); }
   };
 
-  const reset = () => { setFile(null); setTargetColumn(''); setStatus('idle'); setJobId(null); setResults(null); setActiveTab('overview'); };
+  // Removed unused reset function
 
   // ── Data helpers ──
   const evals = results?.supervised_results?.evaluations || {};
@@ -539,8 +539,8 @@ function App() {
       <aside className={`w-64 flex flex-col border-r transition-colors duration-300 ${isDarkMode ? 'bg-[#0d0d14] border-gray-800' : 'bg-white border-gray-200'}`}>
         {/* Logo */}
         <div className="p-6 border-b border-gray-800">
-          <button onClick={reset} className="w-full text-left font-black text-xl flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
-            <img src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} alt="ML Studio Logo" className="w-8 h-8 rounded-lg object-contain" />
+          <button onClick={() => setView('upload')} className="w-full text-left font-black text-2xl flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none">
+            <img src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} alt="ML Studio Logo" className="w-14 h-14 -ml-2 object-contain scale-125" />
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">ML Studio</span>
           </button>
           
