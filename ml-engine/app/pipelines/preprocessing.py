@@ -19,6 +19,18 @@ def generate_profile(df: pd.DataFrame, output_json_path: str):
     profile.to_file(output_json_path)
     return output_json_path
 
+
+def remove_outliers_iqr(df: pd.DataFrame, threshold: float = 1.5):
+    initial_len = len(df)
+    num_cols = df.select_dtypes(include=[np.number]).columns
+    for col in num_cols:
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        df = df[~((df[col] < (Q1 - threshold * IQR)) | (df[col] > (Q3 + threshold * IQR)))]
+    print(f"IQR outlier removal dropped {initial_len - len(df)} rows.")
+    return df
+
 def remove_outliers_zscore(df: pd.DataFrame, threshold: float = 3.0) -> pd.DataFrame:
     """
     Detects and removes outliers using the Z-score method on numerical columns.
@@ -115,7 +127,8 @@ def compute_eda_summary(df: pd.DataFrame):
         
     return summary
 
-def build_and_save_preprocessor(df: pd.DataFrame, target_column: str = None, save_path: str = "preprocessor.joblib") -> ColumnTransformer:
+def build_and_save_preprocessor(df: pd.DataFrame, target_column: str = None, save_path: str = "preprocessor.joblib", config: dict = None) -> ColumnTransformer:
+    config = config or {}
     """
     Builds a dynamic ColumnTransformer for categorical encoding and numerical scaling.
     Fits the transformer on the provided DataFrame and persists it via joblib.
@@ -130,10 +143,16 @@ def build_and_save_preprocessor(df: pd.DataFrame, target_column: str = None, sav
     num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
     
-    # Numerical pipeline: Impute missing values with median, then scale
+    from sklearn.preprocessing import MinMaxScaler
+    num_strategy = config.get("num_imputation", "median")
+    scaler_type = config.get("scaling", "standard")
+    
+    scaler_obj = StandardScaler() if scaler_type == "standard" else MinMaxScaler()
+    
+    # Numerical pipeline
     num_pipeline = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler())
+        ('imputer', SimpleImputer(strategy=num_strategy)),
+        ('scaler', scaler_obj)
     ])
     
     # Categorical pipeline: Impute missing values with mode, then OneHotEncode
@@ -156,19 +175,32 @@ def build_and_save_preprocessor(df: pd.DataFrame, target_column: str = None, sav
     
     return preprocessor
 
-def run_preprocessing_pipeline(df: pd.DataFrame, target_column: str = None, job_id: str = "default_job"):
+def run_preprocessing_pipeline(df: pd.DataFrame, target_column: str = None, job_id: str = "default_job", config: dict = None):
+    config = config or {}
     """
     End-to-end execution of Phase 1 operations.
     """
     # 1. Generate EDA Summary
     eda_summary = compute_eda_summary(df)
     
+    # 1.5 Handle custom column drops
+    drop_cols = config.get("drop_columns", [])
+    df = df.drop(columns=[col for col in drop_cols if col in df.columns])
+
     # 2. Handle Outliers
-    df_clean = remove_outliers_zscore(df)
+    outlier_method = config.get("outlier_method", "zscore")
+    if outlier_method == "zscore":
+        df_clean = remove_outliers_zscore(df)
+    elif outlier_method == "iqr":
+        df_clean = remove_outliers_iqr(df)
+    elif outlier_method == "none":
+        df_clean = df
+    else:
+        df_clean = remove_outliers_zscore(df)
     
     # 3. Build & Persist Dynamic Preprocessor
     preprocessor_path = f"/tmp/{job_id}_preprocessor.joblib"
-    build_and_save_preprocessor(df_clean, target_column, preprocessor_path)
+    build_and_save_preprocessor(df_clean, target_column, preprocessor_path, config)
     
     # Determine what was done for the UI
     num_cols = df_clean.select_dtypes(include=[np.number]).columns.tolist()

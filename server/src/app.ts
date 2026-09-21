@@ -3,6 +3,7 @@ import axios from 'axios';
 import cors from 'cors';
 import { Queue } from 'bullmq';
 import multer from 'multer';
+import copilotRouter from './routes/copilot';
 import path from 'path';
 import fs from 'fs';
 import './services/worker'; // Start the worker automatically
@@ -32,6 +33,7 @@ app.get('/health', (req, res) => {
 
 // Expose the uploads directory statically so FastAPI can download the CSV
 app.use('/uploads', express.static(uploadDir));
+app.use('/api/copilot', copilotRouter);
 
 // Endpoint for the React client to upload a dataset
 
@@ -127,6 +129,7 @@ app.post('/api/webhook/ml-engine', async (req, res) => {
         const { job_id, status, task_type, audit, preprocessing, supervised_results, unsupervised_results, dl_results } = req.body;
         
         console.log(`[Webhook Received] Job ${job_id} finished with status: ${status}`);
+        if (status === 'error') { console.log('ERROR MESSAGE:', req.body.message); }
         console.log('Webhook Body Keys:', Object.keys(req.body));
         console.log('Audit in body:', JSON.stringify(req.body.audit));
         

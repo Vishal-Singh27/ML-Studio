@@ -8,7 +8,7 @@ const FASTAPI_URL = process.env.FASTAPI_URL || 'http://ml-engine:8000';
 const WEBHOOK_URL = 'http://server:5000/api/webhook/ml-engine';
 
 export const worker = new Worker('ml-jobs', async (job) => {
-    const { dataset_path, target_column, enable_dl } = job.data;
+    const { dataset_path, target_column, enable_dl, preprocessing_config } = job.data;
     
     console.log(`[Worker] Processing Job ${job.id}. Sending to ML Engine...`);
     
@@ -19,7 +19,8 @@ export const worker = new Worker('ml-jobs', async (job) => {
             dataset_path: dataset_path,
             target_column: target_column,
             enable_dl: enable_dl,
-            webhook_url: WEBHOOK_URL
+            webhook_url: WEBHOOK_URL,
+            preprocessing_config
         });
         
         console.log(`[Worker] ML Engine acknowledged job ${job.id}:`, response.data.status);

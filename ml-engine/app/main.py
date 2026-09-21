@@ -22,8 +22,9 @@ class TrainRequest(BaseModel):
     target_column: Optional[str] = None
     webhook_url: str
     enable_dl: bool = False
+    preprocessing_config: Optional[dict] = None
 
-def execute_ml_pipeline(job_id: str, dataset_path: str, target_column: str, webhook_url: str, enable_dl: bool):
+def execute_ml_pipeline(job_id: str, dataset_path: str, target_column: str, webhook_url: str, enable_dl: bool, preprocessing_config: dict = None):
     """
     Background worker function that executes the ML pipelines.
     Runs Phase 1 and determines the next task type.
@@ -43,7 +44,7 @@ def execute_ml_pipeline(job_id: str, dataset_path: str, target_column: str, webh
         # ---------------------------------------------------------
         # Phase 1: Automated Data Processing
         # ---------------------------------------------------------
-        preprocessing_results = run_preprocessing_pipeline(df, target_column, job_id)
+        preprocessing_results = run_preprocessing_pipeline(df, target_column, job_id, preprocessing_config)
         
         task_type = determine_task_type(target_column)
         
