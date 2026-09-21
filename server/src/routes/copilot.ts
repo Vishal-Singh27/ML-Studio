@@ -88,14 +88,18 @@ Be concise, confident, and professional.`
             
             // We need dataset_path and target_column to retrain!
             // The client MUST send dataset_path and target_column in req.body for copilot
-            const { dataset_path, target_column, enable_dl } = req.body;
             
-            if (!dataset_path) {
-                return res.json({ 
-                    message: { role: "assistant", content: "I cannot retrain the pipeline because the dataset path was not provided by the client UI." } 
-                });
+            // Retrieve original job arguments from BullMQ to get the exact file URL
+            const originalJob = await jobQueue.getJob(job_id);
+            if (!originalJob) {
+                return res.json({ message: { role: "assistant", content: "I cannot retrain the pipeline because I lost the reference to your original dataset." } });
             }
+            const dataset_path = originalJob.data.dataset_path;
+            const target_column = originalJob.data.target_column;
+            const enable_dl = originalJob.data.enable_dl;
+
             
+                        
             // Queue the new job
             const newJobId = Date.now().toString();
             await jobQueue.add('train-ml', {
