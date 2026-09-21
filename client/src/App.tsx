@@ -586,7 +586,7 @@ function App() {
               </div>
 
               {/* AI Insights Card */}
-              {(insights || insightError || isGeneratingInsights) && (
+              {((insights?.overall || insights) || insightError || isGeneratingInsights) && activeTab !== 'eda' && (
                 <div className={`p-6 rounded-2xl border relative overflow-hidden ${isDarkMode ? 'bg-purple-900/10 border-purple-500/30' : 'bg-purple-50 border-purple-200'}`}>
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-500 to-purple-600"></div>
                   <h3 className="text-lg font-black flex items-center gap-2 mb-4 bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
@@ -607,7 +607,7 @@ function App() {
 
                   {insights && (
                     <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.overall}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights.overall || (typeof insights === 'string' ? insights : '')}</ReactMarkdown>
                     </div>
                   )}
                 </div>
