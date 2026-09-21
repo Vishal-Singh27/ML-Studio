@@ -32,7 +32,7 @@ services:
   - type: web
     name: ml-studio-client
     env: static
-    buildCommand: "cd client && npm install"
+    buildCommand: "cd client && npm install && npm run build"
     staticPublishPath: "./client/dist"
     envVars:
       - key: NODE_VERSION
