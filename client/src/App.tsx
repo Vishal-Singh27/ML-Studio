@@ -1276,6 +1276,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 </RadarChart>
                               </ResponsiveContainer>
                             </div>
+                            {insights?.radar_chart && <div className="mt-4"><AiInsightBlock sectionKey="the multi-metric radar chart" text={insights.radar_chart} isDarkMode={isDarkMode} /></div>}
                           </div>
                         )}
                       </div>

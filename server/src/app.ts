@@ -226,6 +226,7 @@ Return ONLY a valid JSON object matching this exact structure (use markdown for 
   "confusion_matrix": "Insight on classification errors/accuracy.",
   "accuracy_f1": "Insight analyzing the Accuracy vs F1 Score bar chart across models.",
   "roc_curve": "Insight analyzing the ROC Curves and AUC.",
+  "radar_chart": "Insight analyzing the Multi-Metric Radar Chart across models.",
   "feature_importance": "Insight analyzing which features drove the model's decisions most.",
   "precision_recall": "Insight analyzing the Precision & Recall metrics.",
   "cross_validation": "Insight analyzing the Bias-Variance tradeoff from CV scores.",
