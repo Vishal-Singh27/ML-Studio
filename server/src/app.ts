@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import cors from 'cors';
 import { Queue } from 'bullmq';
 import multer from 'multer';
@@ -126,19 +127,34 @@ app.post('/api/webhook/ml-engine', async (req, res) => {
         const { job_id, status, task_type, audit, preprocessing, supervised_results, unsupervised_results, dl_results } = req.body;
         
         console.log(`[Webhook Received] Job ${job_id} finished with status: ${status}`);
+        console.log('Webhook Body Keys:', Object.keys(req.body));
+        console.log('Audit in body:', JSON.stringify(req.body.audit));
         
         // Data Doctor LLM Pass
         let doctor_explanation = "";
         if (audit && audit.issues && process.env.GROQ_API_KEY) {
             try {
-                const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
                 if (audit.issues.length > 0) {
                     const prompt = `You are the Data Doctor, a senior ML architect. Review these dataset audit flags and give a concise, actionable, and friendly summary to the user about what is wrong with their dataset. DO NOT include markdown code blocks. Keep it under 3 paragraphs.\n\nIssues found:\n${JSON.stringify(audit.issues, null, 2)}`;
-                    const completion = await groq.chat.completions.create({
-                        messages: [{ role: 'user', content: prompt }],
-                        model: 'llama3-8b-8192',
+                    
+                    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'llama3-8b-8192',
+                            messages: [{ role: 'user', content: prompt }]
+                        })
                     });
-                    doctor_explanation = completion.choices[0]?.message?.content || "";
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        doctor_explanation = data.choices[0]?.message?.content || "";
+                    } else {
+                        doctor_explanation = "Could not fetch Data Doctor summary.";
+                    }
                 } else {
                     doctor_explanation = "Your dataset looks perfectly clean! No major leakage or class imbalances detected. Excellent foundation for training.";
                 }

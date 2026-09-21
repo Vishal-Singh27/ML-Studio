@@ -196,7 +196,7 @@ def predict_single(request: PredictRequest):
                     shap_data = sorted(shap_data, key=lambda x: abs(x["value"]), reverse=True)[:10] # Top 10
         except Exception as e:
             print("SHAP calculation failed:", e)
-            pass
+            shap_data = [{"feature": "ERROR", "value": str(e)}]
                 
         return {"prediction": str(pred), "probabilities": proba, "shap_values": shap_data}
     except Exception as e:
