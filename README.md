@@ -1,65 +1,84 @@
-# ML Studio — Data Pipeline Engine
+<div align="center">
+  <img src="./client/public/logo-dark.png" alt="ML Studio Logo" width="120" />
+  
+  # ML Studio
+  **The Zero-Code Machine Learning Pipeline Engine**
 
-A full-stack distributed ML platform built with **Node.js, React, FastAPI, BullMQ, Redis, and MongoDB**.  
-Upload any CSV dataset and watch the entire machine learning pipeline execute automatically in the background.
-
-**Author:** Vishal Singh | Reg. No. 25225028
+  [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+  [![Node.js](https://img.shields.io/badge/Node.js-20-green.svg)](https://nodejs.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.100-teal.svg)](https://fastapi.tiangolo.com/)
+  [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.3-orange.svg)](https://scikit-learn.org/)
+  [![BullMQ](https://img.shields.io/badge/BullMQ-Redis-red.svg)](https://docs.bullmq.io/)
+  [![Groq](https://img.shields.io/badge/AI-Groq_Llama_3-purple.svg)](https://groq.com/)
+</div>
 
 ---
 
-## 🚀 Advanced LLM & Agentic Features (New)
-* **Glass-box AutoML:** All models and preprocessing steps are compiled into strict `sklearn.pipeline.Pipeline` objects to completely prevent data leakage.
-* **Export to Python:** One-click generation of the exact Python code needed to reproduce your pipeline locally.
-* *(Coming Soon) Data Doctor Agent*: Automated semantic auditing of datasets to catch Target Leakage before training.
-* *(Coming Soon) Pipeline Copilot*: A natural language interface to directly manipulate the pipeline configuration.
+## 🚀 Overview
 
-## Architecture
+**ML Studio** is an automated, end-to-end Machine Learning pipeline engine. Drop a CSV dataset into the UI, and the engine will automatically clean the data, impute missing values, handle categorical encoding, train an ensemble of models (Random Forest, Gradient Boosting, Multi-Layer Perceptrons), and perform unsupervised clustering—all in a single click.
 
-```
-React (Port 5173)
-    ↓ POST /api/upload
-Node.js Orchestrator (Port 5001)
-    ↓ BullMQ → Redis Queue
-Worker → FastAPI ML Engine (Port 8000)
-    ↓ Webhook on completion
-MongoDB ← JobResult stored
-    ↑ GET /api/jobs/:id (polled by React)
-```
+The platform features an embedded **AI Copilot** powered by Groq (Llama 3). The Copilot acts as a "Data Doctor", analyzing your dataset for data leakage, extreme class imbalances, and outlier skewness, and can dynamically re-run your pipelines with custom configurations via natural language.
 
-## Pipeline Phases
+---
 
-| Phase | Description |
-|-------|-------------|
-| **Phase 1** | Automated EDA & Preprocessing (ydata-profiling, scikit-learn) |
-| **Phase 2** | Supervised Ensemble (GridSearchCV → LR, NB, RF, GB, Voting, Stacking) |
-| **Phase 3** | Unsupervised (PCA + K-Means Silhouette + Hierarchical Clustering) |
-| **Phase 4** | Deep Learning MLP (TensorFlow/Keras, Early Stopping) |
-| **Phase 5** | React Recharts Dashboard (ROC curves, PCA scatter, accuracy bars) |
+## ✨ Features
 
-## Sample Datasets
+- **Automated EDA & Preprocessing**: Automatically detects numerical vs categorical columns, applies robust scaling, one-hot encoding, and drops highly correlated/leaky features.
+- **Supervised Ensembles**: Trains and hyperparameter-tunes Random Forests, Gradient Boosting Machines, and Voting Classifiers.
+- **Deep Learning**: Optionally trains a Multi-Layer Perceptron (MLP) neural network with early stopping and dynamic learning rate reduction.
+- **Unsupervised Learning**: Automatically projects high-dimensional data using PCA, and clusters it using K-Means (optimized via Silhouette analysis) and Agglomerative Hierarchical clustering.
+- **Interactive Dashboards**: Visualizes ROC Curves, Confusion Matrices, Feature Importances, PCA scatter plots, and multi-metric Radar Charts using Recharts.
+- **AI Insights**: Every chart on the dashboard includes an embedded AI-generated analysis block, explaining the metrics in plain English.
+- **Jupyter Export**: Click "Export to Jupyter" to instantly download your optimal pipeline as a fully runnable `.ipynb` notebook.
 
-Three sample datasets are included in `sample_datasets/` for testing:
+---
 
-| File | Target | Description |
-|------|--------|-------------|
-| `diabetes_test.csv` | `diabetes` | 800-row diabetes classification |
-| `heart_disease_test.csv` | `heart_disease` | 800-row cardiac risk classification |
-| `customer_churn_test.csv` | `churn` | 800-row customer churn prediction |
+## 🏗️ Architecture
 
-## Running Locally
+ML Studio is built on a scalable microservice architecture to prevent heavy ML training jobs from blocking the main web server.
 
-```bash
-docker compose up -d --build
-```
+1. **Frontend (`/client`)**: React + Vite + Tailwind CSS.
+2. **Orchestrator API (`/server`)**: Node.js + Express. Handles file uploads and AI Copilot routing.
+3. **Message Queue**: Redis + BullMQ. Safely queues intensive ML tasks.
+4. **ML Engine (`/ml-engine`)**: Python + FastAPI + Scikit-Learn. A dedicated background worker that executes the pipelines and fires webhooks back to the Node API when finished.
 
-Open [http://localhost:5173](http://localhost:5173)
+---
 
-## Services
+## 💻 Local Setup (Docker)
 
-| Service | Port | Stack |
-|---------|------|-------|
-| Client | 5173 | React + Vite + Tailwind v4 |
-| Server | 5001 | Node.js + Express + BullMQ |
-| ML Engine | 8000 | FastAPI + scikit-learn + TensorFlow |
-| Redis | 6379 | Job Queue |
-| MongoDB | 27017 | Result Storage |
+The absolute easiest way to run ML Studio locally is using Docker Compose, which automatically builds and networks all 4 containers (React, Node, Python, Redis).
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Vishal-Singh27/ML-Studio.git
+   cd ML-Studio
+   ```
+2. Create a `.env` file in the `server` directory and add your Groq API Key:
+   ```env
+   GROQ_API_KEY=gsk_your_api_key_here
+   ```
+3. Boot up the entire stack:
+   ```bash
+   docker-compose up -d --build
+   ```
+4. Open [http://localhost:5173](http://localhost:5173) in your browser!
+
+---
+
+## ☁️ Production Deployment (Zero-Cost)
+
+ML Studio is optimized to be deployed completely for free using **Render** and **Upstash**.
+
+1. **Redis**: Create a free Serverless Redis database on [Upstash](https://upstash.com/). Copy the `rediss://` URL.
+2. **Render**: Sign into [Render.com](https://render.com/), click **New Blueprint**, and connect your GitHub repository.
+3. Render will read the `render.yaml` file in this repository and automatically provision the React UI, Node Server, and Python Engine.
+4. When prompted, paste your `GROQ_API_KEY` and the `REDIS_URL` you got from Upstash.
+
+Render will automatically configure the internal networking, set up HTTPS, and deploy your live URL!
+
+---
+
+## 📝 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
