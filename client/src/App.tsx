@@ -1325,6 +1325,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 {evals[cmModel]?.cv_scores && (
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                     <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Target size={16} className="text-pink-400" /> Cross-Validation (Bias-Variance)</h4>
+                                    {insights?.cross_validation && <AiInsightBlock sectionKey="the cross-validation bias-variance" text={insights.cross_validation} isDarkMode={isDarkMode} />}
                                     <div className="flex gap-4">
                                       <div className="flex-1 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                                         <p className="text-[10px] uppercase text-emerald-500 font-bold mb-1">Mean Test Score</p>
@@ -1370,6 +1371,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'} h-[300px] flex flex-col`}>
                                     <h4 className="text-sm font-bold mb-1 flex items-center gap-2"><BarChart2 size={16} className="text-yellow-400" /> Feature Importances</h4>
                                     <p className="text-[10px] text-gray-500 mb-3">Which features drove the model's decisions</p>
+                                    {insights?.feature_importance && <AiInsightBlock sectionKey="the feature importances" text={insights.feature_importance} isDarkMode={isDarkMode} />}
                                     <div className="flex-1 overflow-y-auto pr-2">
                                       <ResponsiveContainer width="100%" height={Math.max(200, evals[cmModel].feature_importance.length * 35)}>
                                         <ComposedChart data={evals[cmModel].feature_importance} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
@@ -1392,6 +1394,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 {evals[cmModel]?.classification_report && (
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                     <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Network size={16} className="text-indigo-400" /> Precision & Recall per Class</h4>
+                                    {insights?.precision_recall && <AiInsightBlock sectionKey="the precision and recall metrics" text={insights.precision_recall} isDarkMode={isDarkMode} />}
                                     <div className="space-y-3">
                                       {Object.entries(evals[cmModel].classification_report).filter(([k]) => k !== 'accuracy' && k !== 'macro avg' && k !== 'weighted avg').map(([cls, metrics]: any) => (
                                         <div key={cls}>

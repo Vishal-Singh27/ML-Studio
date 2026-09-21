@@ -226,14 +226,19 @@ app.post('/api/insights', async (req, res) => {
         const prompt = `You are an expert AI Data Scientist. Analyze the ML pipeline results and output a JSON object containing specific insights for different UI sections.
 Return ONLY a valid JSON object matching this exact structure (use markdown for text, use bolding, avoid raw tables, keep it concise and punchy):
 {
-  "overall": "2-3 sentences summarizing the overall outcome (dataset size, best model/clusters, main takeaway).",
-  "eda": "1-2 short paragraphs analyzing the EDA: missing values, skewness, strong correlations, outlier counts, and PCA variance. (Always provided).",
-  "leaderboard": "Insight on model comparison and metrics (Supervised only, otherwise null).",
-  "confusion_matrix": "Insight on classification errors/accuracy (Supervised only, otherwise null).",
-  "deep_learning": "Insight on DL training curves (Supervised DL only, otherwise null).",
-  "pca": "Insight on PCA projection and cluster separation (Unsupervised only, otherwise null).",
-  "distribution": "Insight on cluster sizes/balance (Unsupervised only, otherwise null).",
-  "silhouette": "Insight on the Silhouette score and optimal K (Unsupervised only, otherwise null)."
+  "overall": "2-3 sentences summarizing the overall outcome.",
+  "eda": "Analysis of the EDA metrics.",
+  "leaderboard": "Insight on model comparison.",
+  "confusion_matrix": "Insight on classification errors/accuracy.",
+  "accuracy_f1": "Insight analyzing the Accuracy vs F1 Score bar chart across models.",
+  "roc_curve": "Insight analyzing the ROC Curves and AUC.",
+  "feature_importance": "Insight analyzing which features drove the model's decisions most.",
+  "precision_recall": "Insight analyzing the Precision & Recall metrics.",
+  "cross_validation": "Insight analyzing the Bias-Variance tradeoff from CV scores.",
+  "deep_learning": "Insight on DL training curves.",
+  "pca": "Insight on PCA projection and cluster separation.",
+  "distribution": "Insight on cluster sizes/balance.",
+  "silhouette": "Insight on the Silhouette score and optimal K."
 }
 
 Pipeline Results:
