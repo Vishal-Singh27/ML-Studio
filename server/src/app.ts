@@ -26,6 +26,9 @@ const upload = multer({ storage });
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const jobQueue = new Queue('ml-jobs', { connection: { url: REDIS_URL } });
+import Redis from 'ioredis';
+const redisDb = new Redis(REDIS_URL);
+
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'server' });
@@ -114,14 +117,6 @@ app.post('/api/upload', upload.single('dataset'), async (req, res) => {
     }
 });
 
-import mongoose from 'mongoose';
-import JobResult from './models/JobResult';
-
-// Connect to MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:27017/mlstudio';
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
 
 // Webhook endpoint for the Python FastAPI Engine to ping when training is done
 app.post('/api/webhook/ml-engine', async (req, res) => {
@@ -194,9 +189,10 @@ app.get('/api/jobs/:id', async (req, res) => {
     try {
         const job_id = req.params.id;
         
-        // First check MongoDB to see if the job is completed and stored
-        const result = await JobResult.findOne({ job_id });
-        if (result) {
+        // First check Redis DB to see if the job is completed and stored
+        const cachedStr = await redisDb.get(`job_result:${job_id}`);
+        if (cachedStr) {
+            const result = JSON.parse(cachedStr);
             return res.json({ status: result.status, data: result });
         }
         
