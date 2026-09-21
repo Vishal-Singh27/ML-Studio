@@ -1172,11 +1172,41 @@ accuracy = pipeline.score(X_test, y_test)
 print(f"Test Accuracy: {accuracy:.4f}")
 `;
                   
-                  const blob = new Blob([pyCode], { type: 'text/plain' });
+                  const notebook = {
+                    cells: [
+                      {
+                        cell_type: "markdown",
+                        metadata: {},
+                        source: [
+                          "# ML Studio Automated Pipeline\n",
+                          "Generated automatically by **ML Studio**.\n",
+                          "This notebook contains the exact preprocessing steps and model architecture that achieved the best results on your dataset."
+                        ]
+                      },
+                      {
+                        cell_type: "code",
+                        execution_count: null,
+                        metadata: {},
+                        outputs: [],
+                        source: pyCode.split("\n").map(line => line + "\n")
+                      }
+                    ],
+                    metadata: {
+                      kernelspec: {
+                        display_name: "Python 3",
+                        language: "python",
+                        name: "python3"
+                      }
+                    },
+                    nbformat: 4,
+                    nbformat_minor: 4
+                  };
+                  
+                  const blob = new Blob([JSON.stringify(notebook, null, 2)], { type: 'application/json' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = 'ml_studio_pipeline.py';
+                  a.download = 'ml_studio_pipeline.ipynb';
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
@@ -1189,7 +1219,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                     <div className="flex justify-between items-end mb-4">
                       <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"><Target className="text-emerald-500" /> Pipeline Results</h2>
                       <button onClick={handleExportCode} className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer z-50 relative">
-                        <Download size={16} /> Export to Python
+                        <Download size={16} /> Export to Jupyter (.ipynb)
                       </button>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
