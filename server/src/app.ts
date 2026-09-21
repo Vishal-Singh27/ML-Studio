@@ -162,20 +162,17 @@ app.post('/api/webhook/ml-engine', async (req, res) => {
             }
         }
         
-        await JobResult.findOneAndUpdate(
-            { job_id },
-            { 
-                job_id, 
-                status, 
-                task_type, 
-                audit,
-                preprocessing, 
-                supervised_results, 
-                unsupervised_results, 
-                dl_results 
-            },
-            { upsert: true, new: true }
-        );
+        await redisDb.set(`job_result:${job_id}`, JSON.stringify({
+            job_id, 
+            status: 'success', 
+            task_type, 
+            audit,
+            preprocessing,
+            supervised_results,
+            unsupervised_results,
+            dl_results,
+            error: null
+        }), 'EX', 60 * 60 * 24); // Expire in 24 hours
         
         res.status(200).json({ received: true });
     } catch (error) {
