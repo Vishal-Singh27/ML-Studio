@@ -440,6 +440,19 @@ function App() {
     return () => { if (interval) clearInterval(interval); };
   }, [status, jobId]);
 
+  
+  // Auto-select the best model for Deep Dive when results load
+  useEffect(() => {
+    if (results?.task_type === 'SUPERVISED' && results.supervised_results?.evaluations) {
+      const evals = results.supervised_results.evaluations;
+      const sorted = Object.keys(evals).sort((a, b) => (evals[b].accuracy || 0) - (evals[a].accuracy || 0));
+      if (sorted.length > 0 && !cmModel) {
+        setCmModel(sorted[0]);
+        if (!selectedInferenceModel) setSelectedInferenceModel(sorted[0]);
+      }
+    }
+  }, [results, cmModel, selectedInferenceModel]);
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
