@@ -3,7 +3,7 @@ import {
   UploadCloud, Activity, Settings, Database, Play, Grid, CheckCircle,
   Sun, Moon, Cpu, FileSpreadsheet, Trophy, Target, Zap,
   TrendingUp, BarChart2, GitBranch, Layers, Award, ChevronRight, Network,
-  Brain, FlaskConical, Sparkles, Download
+  Brain, FlaskConical, Sparkles, Download, AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -33,7 +33,7 @@ function AiInsightBlock({ text, sectionKey, isDarkMode }: { text?: string, secti
     setChat(prev => [...prev, { role: 'user', content: q }]);
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/insights/followup', {
+      const res = await axios.post('/api/insights/followup', {
         section: sectionKey,
         question: q,
         baseInsight: text
@@ -196,7 +196,7 @@ function App() {
     setInferenceLoading(true);
     setInferenceResult(null);
     try {
-      const res = await axios.post(`http://localhost:8000/api/jobs/${jobId}/predict`, {
+      const res = await axios.post(`/api/jobs/${jobId}/predict`, {
         model_name: selectedInferenceModel,
         features: inferenceForm
       });
@@ -246,7 +246,7 @@ function App() {
         };
       }
       
-      const res = await axios.post('http://localhost:5001/api/insights', { summary });
+      const res = await axios.post('/api/insights', { summary });
       setInsights(res.data.insights);
     } catch (err: any) {
       setInsightError(err.response?.data?.error || 'Failed to generate insights.');
@@ -265,7 +265,7 @@ function App() {
     if (status === 'queued' && jobId) {
       interval = setInterval(async () => {
         try {
-          const res = await axios.get(`http://localhost:5001/api/jobs/${jobId}`);
+          const res = await axios.get(`/api/jobs/${jobId}`);
           if (res.data.status === 'success' && res.data.data) {
             setResults(res.data.data);
             if (res.data.data.task_type === 'SUPERVISED' && res.data.data.supervised_results) {
@@ -297,7 +297,7 @@ function App() {
     formData.append('target', targetColumn);
     formData.append('enable_dl', enableDL.toString());
     try {
-      const res = await axios.post('http://localhost:5001/api/upload', formData, {
+      const res = await axios.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setJobId(res.data.jobId);
@@ -652,6 +652,39 @@ function App() {
                         {insights?.eda && (
                           <div className={`prose prose-sm max-w-none ${isDarkMode ? 'prose-invert prose-p:text-gray-300 prose-headings:text-white prose-strong:text-purple-300' : 'prose-p:text-gray-700 prose-strong:text-purple-700'}`}>
                             <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{insights.eda}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Data Doctor Report */}
+                    {results.audit && results.audit.issues && (
+                      <div className={`p-6 rounded-2xl border relative overflow-hidden ${results.audit.issues.length > 0 ? (isDarkMode ? 'bg-red-900/10 border-red-500/30' : 'bg-red-50 border-red-200') : (isDarkMode ? 'bg-emerald-900/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200')}`}>
+                        <div className={`absolute top-0 left-0 w-full h-1 ${results.audit.issues.length > 0 ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-emerald-400 to-teal-500'}`}></div>
+                        <h3 className={`text-lg font-black flex items-center gap-2 mb-4 ${results.audit.issues.length > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                          <Activity size={20} /> Data Doctor Audit
+                        </h3>
+                        
+                        {results.audit.explanation && (
+                          <div className={`prose prose-sm max-w-none mb-4 ${isDarkMode ? 'prose-invert' : ''}`}>
+                            <ReactMarkdown remarkPlugins={memoizedRemarkPlugins}>{results.audit.explanation}</ReactMarkdown>
+                          </div>
+                        )}
+                        
+                        {results.audit.issues.length > 0 && (
+                          <div className="flex flex-col gap-2 mt-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Detected Flags</p>
+                            {results.audit.issues.map((issue: any, idx: number) => (
+                              <div key={idx} className={`p-3 rounded-lg text-sm border flex items-start gap-3 ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                <div className="p-1.5 rounded-md bg-red-500/10 text-red-500 shrink-0 mt-0.5">
+                                  <AlertTriangle size={14} />
+                                </div>
+                                <div>
+                                  <span className="font-bold block mb-0.5">{issue.type.replace(/_/g, ' ').toUpperCase()} on '{issue.column}'</span>
+                                  <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{issue.description}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>

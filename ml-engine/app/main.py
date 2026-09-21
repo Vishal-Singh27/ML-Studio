@@ -6,8 +6,10 @@ import joblib
 import requests
 from .routing import determine_task_type
 from .pipelines.preprocessing import run_preprocessing_pipeline
+from .routers import audit
 
 app = FastAPI(title="ML Studio Engine", version="1.0.0")
+app.include_router(audit.router)
 
 
 class PredictRequest(BaseModel):
@@ -32,6 +34,12 @@ def execute_ml_pipeline(job_id: str, dataset_path: str, target_column: str, webh
         # (In a real production app, this path would be an S3/Blob storage URL)
         df = pd.read_csv(dataset_path)
         
+        # ---------------------------------------------------------
+        # Data Doctor Audit (Pre-processing)
+        # ---------------------------------------------------------
+        audit_req = audit.AuditRequest(dataset_path=dataset_path, target_column=target_column)
+        audit_results = audit.audit_dataset(audit_req)
+
         # ---------------------------------------------------------
         # Phase 1: Automated Data Processing
         # ---------------------------------------------------------
@@ -82,6 +90,7 @@ def execute_ml_pipeline(job_id: str, dataset_path: str, target_column: str, webh
             "job_id": job_id,
             "status": "success",
             "task_type": task_type,
+            "audit": audit_results,
             "preprocessing": preprocessing_results,
             "supervised_results": supervised_results,
             "unsupervised_results": unsupervised_results,

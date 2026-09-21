@@ -33,6 +33,54 @@ app.get('/health', (req, res) => {
 app.use('/uploads', express.static(uploadDir));
 
 // Endpoint for the React client to upload a dataset
+
+
+app.post('/api/audit', upload.single('dataset'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    // 1. Call ML Engine /audit endpoint
+    const mlEngineAuditUrl = 'http://ml-engine:8000/audit';
+    const auditResponse = await axios.post(mlEngineAuditUrl, {
+      dataset_path: req.file.path,
+      target_column: req.body.target_column || null
+    });
+    
+    const issues = auditResponse.data.issues || [];
+    
+    // 2. Generate LLM Explanation
+    let llmExplanation = "";
+    if (issues.length > 0 && process.env.GROQ_API_KEY) {
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const prompt = `You are the Data Doctor, a senior ML architect. Review these dataset audit flags and give a concise, actionable, and friendly summary to the user about what is wrong with their dataset. DO NOT include markdown code blocks. Keep it under 4 paragraphs.
+
+Issues found:
+${JSON.stringify(issues, null, 2)}`;
+      
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama3-8b-8192',
+      });
+      llmExplanation = completion.choices[0]?.message?.content || "";
+    } else if (issues.length === 0) {
+      llmExplanation = "Your dataset looks perfectly clean! No major leakage or class imbalances detected. You're ready to train.";
+    }
+    
+    res.json({
+      status: 'success',
+      issues,
+      explanation: llmExplanation,
+      file_path: req.file.path // Returning this so we can reuse it for training
+    });
+    
+  } catch (error: any) {
+    console.error('Audit Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/upload', upload.single('dataset'), async (req, res) => {
     try {
         if (!req.file) {
@@ -75,9 +123,30 @@ mongoose.connect(MONGO_URI)
 // Webhook endpoint for the Python FastAPI Engine to ping when training is done
 app.post('/api/webhook/ml-engine', async (req, res) => {
     try {
-        const { job_id, status, task_type, preprocessing, supervised_results, unsupervised_results, dl_results } = req.body;
+        const { job_id, status, task_type, audit, preprocessing, supervised_results, unsupervised_results, dl_results } = req.body;
         
         console.log(`[Webhook Received] Job ${job_id} finished with status: ${status}`);
+        
+        // Data Doctor LLM Pass
+        let doctor_explanation = "";
+        if (audit && audit.issues && process.env.GROQ_API_KEY) {
+            try {
+                const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+                if (audit.issues.length > 0) {
+                    const prompt = `You are the Data Doctor, a senior ML architect. Review these dataset audit flags and give a concise, actionable, and friendly summary to the user about what is wrong with their dataset. DO NOT include markdown code blocks. Keep it under 3 paragraphs.\n\nIssues found:\n${JSON.stringify(audit.issues, null, 2)}`;
+                    const completion = await groq.chat.completions.create({
+                        messages: [{ role: 'user', content: prompt }],
+                        model: 'llama3-8b-8192',
+                    });
+                    doctor_explanation = completion.choices[0]?.message?.content || "";
+                } else {
+                    doctor_explanation = "Your dataset looks perfectly clean! No major leakage or class imbalances detected. Excellent foundation for training.";
+                }
+                audit.explanation = doctor_explanation;
+            } catch (e) {
+                console.error("Data Doctor Error", e);
+            }
+        }
         
         await JobResult.findOneAndUpdate(
             { job_id },
@@ -85,6 +154,7 @@ app.post('/api/webhook/ml-engine', async (req, res) => {
                 job_id, 
                 status, 
                 task_type, 
+                audit,
                 preprocessing, 
                 supervised_results, 
                 unsupervised_results, 
