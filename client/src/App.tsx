@@ -597,8 +597,11 @@ function App() {
                 </button>
               </div>
 
+              {/* ── TABS CONTAINER ── */}
+              <div className="relative w-full">
+
               {/* ── EDA TAB CONTENT ── */}
-              <div className={activeTab === 'eda' ? 'block animate-fade-in' : 'hidden'}>
+              <div className={activeTab === 'eda' ? 'relative z-10 opacity-100 transition-opacity duration-300' : 'absolute top-0 left-0 w-full opacity-0 invisible pointer-events-none'}>
                 {results.preprocessing && (() => {
                 const edaFeatures = results.preprocessing?.eda?.features || [];
                 const corrMatrix = results.preprocessing?.eda?.correlation_matrix || [];
@@ -852,7 +855,7 @@ function App() {
               </div>
               
               {/* ── MODEL RESULTS TAB CONTENT ── */}
-              <div className={activeTab !== 'eda' ? 'block animate-fade-in' : 'hidden'}>
+              <div className={activeTab !== 'eda' ? 'relative z-10 opacity-100 transition-opacity duration-300' : 'absolute top-0 left-0 w-full opacity-0 invisible pointer-events-none'}>
 
               {/* AI Insights Card */}
               {((insights?.overall || insights) || insightError || isGeneratingInsights) && (
@@ -1479,6 +1482,7 @@ function App() {
                   </div>
                 );
               })()}
+              </div>
               </div>
             </div>
           )}
