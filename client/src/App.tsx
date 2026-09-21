@@ -1210,8 +1210,9 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 <Bar isAnimationActive={true} animationDuration={400} animationEasing="ease-out" dataKey="F1" fill="#10b981" radius={[4, 4, 0, 0]} />
                               </ComposedChart>
                             </ResponsiveContainer>
+                          {insights?.accuracy_f1 && <div className="mt-4"><AiInsightBlock sectionKey="the accuracy vs F1 score chart" text={insights.accuracy_f1} isDarkMode={isDarkMode} /></div>}
                           </div>
-                        </div>
+                          </div>
 
                         {/* ROC Curve */}
                         <div className={`p-6 rounded-2xl border ${card}`}>
@@ -1235,8 +1236,9 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 {/* Diagonal reference line — fake it with data */}
                               </LineChart>
                             </ResponsiveContainer>
+                          {insights?.roc_curve && <div className="mt-4"><AiInsightBlock sectionKey="the ROC curve" text={insights.roc_curve} isDarkMode={isDarkMode} /></div>}
                           </div>
-                        </div>
+                          </div>
 
                         {/* Radar Chart */}
                         {radarData.length > 0 && (
@@ -1325,7 +1327,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 {evals[cmModel]?.cv_scores && (
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                     <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Target size={16} className="text-pink-400" /> Cross-Validation (Bias-Variance)</h4>
-                                    {insights?.cross_validation && <AiInsightBlock sectionKey="the cross-validation bias-variance" text={insights.cross_validation} isDarkMode={isDarkMode} />}
+                                    
                                     <div className="flex gap-4">
                                       <div className="flex-1 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                                         <p className="text-[10px] uppercase text-emerald-500 font-bold mb-1">Mean Test Score</p>
@@ -1336,6 +1338,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                         <p className="text-xl font-black text-orange-400">±{(evals[cmModel].cv_scores.std_test_score * 100).toFixed(2)}%</p>
                                       </div>
                                     </div>
+                                    {insights?.cross_validation && <div className="mt-4"><AiInsightBlock sectionKey="the cross-validation bias-variance" text={insights.cross_validation} isDarkMode={isDarkMode} /></div>}
                                   </div>
                                 )}
                                 
@@ -1355,12 +1358,13 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 )}
                                 
                                 {/* Confusion Matrix */}
-                                {insights?.confusion_matrix && <AiInsightBlock sectionKey="the confusion matrix" text={insights.confusion_matrix} isDarkMode={isDarkMode} />}
+                                
                                 <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                   <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><FlaskConical size={16} className="text-purple-400" /> Confusion Matrix Heatmap</h4>
                                   <div className="flex justify-center">
                                     <ConfusionMatrix matrix={evals[cmModel]?.confusion_matrix || []} isDarkMode={isDarkMode} />
                                   </div>
+                                  {insights?.confusion_matrix && <div className="mt-4"><AiInsightBlock sectionKey="the confusion matrix" text={insights.confusion_matrix} isDarkMode={isDarkMode} /></div>}
                                 </div>
                               </div>
                               
@@ -1371,7 +1375,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'} h-[300px] flex flex-col`}>
                                     <h4 className="text-sm font-bold mb-1 flex items-center gap-2"><BarChart2 size={16} className="text-yellow-400" /> Feature Importances</h4>
                                     <p className="text-[10px] text-gray-500 mb-3">Which features drove the model's decisions</p>
-                                    {insights?.feature_importance && <AiInsightBlock sectionKey="the feature importances" text={insights.feature_importance} isDarkMode={isDarkMode} />}
+                                    
                                     <div className="flex-1 overflow-y-auto pr-2">
                                       <ResponsiveContainer width="100%" height={Math.max(200, evals[cmModel].feature_importance.length * 35)}>
                                         <ComposedChart data={evals[cmModel].feature_importance} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
@@ -1383,6 +1387,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                         </ComposedChart>
                                       </ResponsiveContainer>
                                     </div>
+                                    {insights?.feature_importance && <div className="mt-4"><AiInsightBlock sectionKey="the feature importances" text={insights.feature_importance} isDarkMode={isDarkMode} /></div>}
                                   </div>
                                 ) : (
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'} h-24 flex items-center justify-center text-sm text-gray-500`}>
@@ -1394,7 +1399,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                 {evals[cmModel]?.classification_report && (
                                   <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                                     <h4 className="text-sm font-bold mb-3 flex items-center gap-2"><Network size={16} className="text-indigo-400" /> Precision & Recall per Class</h4>
-                                    {insights?.precision_recall && <AiInsightBlock sectionKey="the precision and recall metrics" text={insights.precision_recall} isDarkMode={isDarkMode} />}
+                                    
                                     <div className="space-y-3">
                                       {Object.entries(evals[cmModel].classification_report).filter(([k]) => k !== 'accuracy' && k !== 'macro avg' && k !== 'weighted avg').map(([cls, metrics]: any) => (
                                         <div key={cls}>
@@ -1419,6 +1424,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                         </div>
                                       ))}
                                     </div>
+                                    {insights?.precision_recall && <div className="mt-4"><AiInsightBlock sectionKey="the precision and recall metrics" text={insights.precision_recall} isDarkMode={isDarkMode} /></div>}
                                   </div>
                                 )}
                                 
@@ -1433,7 +1439,7 @@ print(f"Test Accuracy: {accuracy:.4f}")
                     {/* ── Deep Learning Tab ── */}
                     {activeTab === 'deep_learning' && results.dl_results && (
                       <div className="space-y-6">
-                        {insights?.deep_learning && <AiInsightBlock sectionKey="the deep learning training history" text={insights.deep_learning} isDarkMode={isDarkMode} />}
+                        
                         {/* DL stat cards */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                           <StatCard isDarkMode={isDarkMode} icon={<Brain size={20} className="text-purple-400" />} label="Epochs Trained" value={results.dl_results.epochs_trained} sub="with Early Stopping" color="bg-purple-500" />
@@ -1480,9 +1486,10 @@ print(f"Test Accuracy: {accuracy:.4f}")
                                       <Line isAnimationActive={true} animationDuration={400} animationEasing="ease-out" type="monotone" dataKey="val_accuracy" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Val Acc" />
                                     </LineChart>
                                   </ResponsiveContainer>
-                                </div>
-                              </div>
-                            </div>
+                                {insights?.deep_learning && <div className="mt-4"><AiInsightBlock sectionKey="the deep learning training history" text={insights.deep_learning} isDarkMode={isDarkMode} /></div>}
+                          </div>
+                          </div>
+                        </div>
                           </div>
                         )}
 
@@ -1492,7 +1499,8 @@ print(f"Test Accuracy: {accuracy:.4f}")
                             <h3 className="text-base font-bold mb-5 flex items-center gap-2"><FlaskConical size={18} className="text-purple-400" /> MLP Confusion Matrix</h3>
                             <div className="flex justify-center">
                               <ConfusionMatrix matrix={results.dl_results.evaluation.confusion_matrix} isDarkMode={isDarkMode} />
-                            </div>
+                            {insights?.dl_confusion_matrix && <div className="mt-4"><AiInsightBlock sectionKey="the MLP confusion matrix" text={insights.dl_confusion_matrix} isDarkMode={isDarkMode} /></div>}
+                          </div>
                           </div>
                         )}
                       </div>

@@ -236,6 +236,7 @@ Return ONLY a valid JSON object matching this exact structure (use markdown for 
   "precision_recall": "Insight analyzing the Precision & Recall metrics.",
   "cross_validation": "Insight analyzing the Bias-Variance tradeoff from CV scores.",
   "deep_learning": "Insight on DL training curves.",
+  "dl_confusion_matrix": "Insight analyzing the MLP confusion matrix false positives/negatives.",
   "pca": "Insight on PCA projection and cluster separation.",
   "distribution": "Insight on cluster sizes/balance.",
   "silhouette": "Insight on the Silhouette score and optimal K."
